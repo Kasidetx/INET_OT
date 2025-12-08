@@ -1,0 +1,37 @@
+[
+  {
+    "name": "login",
+    "path": "/login",
+    "component": "/Users/ait0102/Downloads/INET_OT/Frontend/pages/login.vue",
+    "chunkName": "pages/login",
+    "_name": "_efb10bc8"
+  },
+  {
+    "name": "manageposition",
+    "path": "/manageposition",
+    "component": "/Users/ait0102/Downloads/INET_OT/Frontend/pages/manageposition/index.vue",
+    "chunkName": "pages/manageposition/index",
+    "_name": "_5c66f12e"
+  },
+  {
+    "name": "overtime",
+    "path": "/overtime",
+    "component": "/Users/ait0102/Downloads/INET_OT/Frontend/pages/overtime/index.vue",
+    "chunkName": "pages/overtime/index",
+    "_name": "_4bc26141"
+  },
+  {
+    "name": "overtimerequest",
+    "path": "/overtimerequest",
+    "component": "/Users/ait0102/Downloads/INET_OT/Frontend/pages/overtimerequest/index.vue",
+    "chunkName": "pages/overtimerequest/index",
+    "_name": "_e7f1bbf8"
+  },
+  {
+    "name": "timeattendance",
+    "path": "/timeattendance",
+    "component": "/Users/ait0102/Downloads/INET_OT/Frontend/pages/timeattendance/index.vue",
+    "chunkName": "pages/timeattendance/index",
+    "_name": "_2769f1d4"
+  }
+]

@@ -1,0 +1,44 @@
+{
+  "DialogReject": {
+    "description": "Auto imported from components/dialog/reject.vue"
+  },
+  "DialogSuccess": {
+    "description": "Auto imported from components/dialog/success.vue"
+  },
+  "OvertimeOvertimeconditiontabs": {
+    "description": "Auto imported from components/overtime/overtimeconditiontabs.vue"
+  },
+  "OvertimeOvertimetypeform": {
+    "description": "Auto imported from components/overtime/overtimetypeform.vue"
+  },
+  "TemplateAvatarUpload": {
+    "description": "Auto imported from components/template/AvatarUpload.vue"
+  },
+  "TimeattendanceDialogOvertimeConfirm": {
+    "description": "Auto imported from components/timeattendance/DialogOvertimeConfirm.vue"
+  },
+  "TimeattendanceDialogOvertimeForm": {
+    "description": "Auto imported from components/timeattendance/DialogOvertimeForm.vue"
+  },
+  "TimeattendanceDialogOvertimeSuccess": {
+    "description": "Auto imported from components/timeattendance/DialogOvertimeSuccess.vue"
+  },
+  "PositionDialogAddPosition": {
+    "description": "Auto imported from components/position/DialogAddPosition.vue"
+  },
+  "PositionDialogAddPositionLevel": {
+    "description": "Auto imported from components/position/DialogAddPositionLevel.vue"
+  },
+  "PositionDialogEditPosition": {
+    "description": "Auto imported from components/position/DialogEditPosition.vue"
+  },
+  "PositionDialogEditPositionLevel": {
+    "description": "Auto imported from components/position/DialogEditPositionLevel.vue"
+  },
+  "PositionSecPosition": {
+    "description": "Auto imported from components/position/SecPosition.vue"
+  },
+  "PositionSecPositionLevel": {
+    "description": "Auto imported from components/position/SecPositionLevel.vue"
+  }
+}
