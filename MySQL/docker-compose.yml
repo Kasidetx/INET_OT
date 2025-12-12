@@ -3,7 +3,7 @@ services:
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: tockOT
+      MYSQL_DATABASE: INET_OT
     ports:
       - "23306:3306"
     volumes:

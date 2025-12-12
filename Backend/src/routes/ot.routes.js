@@ -5,14 +5,16 @@ import {
   getOtById,
   createOt,
   updateOt,
-  deleteOt
+  deleteOt,
+  getOtColumns
 } from '../controllers/ot.controller.js'
 
 const router = express.Router()
 
 // GET /api/ot
 router.get('/', getAllOt)
-
+// GET /api/ot/columns
+router.get('/columns', getOtColumns)
 // GET /api/ot/:id
 router.get('/:id', getOtById)
 

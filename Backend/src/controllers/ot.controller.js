@@ -1,16 +1,26 @@
 // src/controllers/ot.controller.js
 import OtModel from '../models/ot.model.js'
 
+export const getOtColumns = async (req, res) => {
+  try {
+    const data = await OtModel.findColumns()
+    res.json({ success: true, data })
+  }
+  catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Internal server error getOtColumns' })
+  }
+}
+
 export const getAllOt = async (req, res) => {
   try {
     const data = await OtModel.findAll()
     res.json({ success: true, data })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: 'Internal server error' })
+    res.status(500).json({ success: false, message: 'Internal server error getAllOt' })
   }
 }
-
 export const getOtById = async (req, res) => {
   try {
     const { id } = req.params

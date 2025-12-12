@@ -14,7 +14,7 @@ const OtDetailModel = {
   // ดึงรายการ detail ทั้งหมดของ OT ใบหนึ่ง
   async findByOtId(otId) {
     const [rows] = await db.query(
-      'SELECT * FROM ot_detail WHERE ot_id = ? ORDER BY id ASC',
+      'SELECT * FROM view_ot_detail WHERE ot_id = ? ORDER BY id ASC',
       [otId]
     );
     return rows;

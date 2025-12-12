@@ -2,9 +2,10 @@ import db from '../config/db.js';
 
 const OtConfigModel = {
     async findAll() {
-        const [rows] = await db.query('SELECT * FROM ot_config ORDER BY id DESC');
+        const [rows] = await db.query('SELECT * FROM ot_config ORDER BY id ASC');
         return rows;
     },
+
 
     async findById(id) {
         const [rows] = await db.query('SELECT * FROM ot_config WHERE id = ?', [id]);
