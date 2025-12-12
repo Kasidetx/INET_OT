@@ -15,6 +15,7 @@ export const getOtById = async (req, res) => {
   try {
     const { id } = req.params
     const item = await OtModel.findById(id)
+    console.log('updateOT id =', id)
 
     if (!item) {
       return res.status(404).json({ success: false, message: 'OT not found' })
@@ -48,14 +49,14 @@ export const createOt = async (req, res) => {
   try {
     const body = req.body
 
-    // เช็คค่าที่จำเป็น (เอาแบบเบา ๆ ก่อน)
+    // เช็คค่าที่จำเป็น
     if (!body.start_time || !body.end_time) {
       return res.status(400).json({
         success: false,
-        message: 'start_time และ end_time'
+        message: 'start_time AND end_time'
       })
     }
-
+    
     // Calculate total hours
     const total = calculateHours(body.start_time, body.end_time)
 
@@ -68,21 +69,24 @@ export const createOt = async (req, res) => {
     }
 
     const created = await OtModel.create(dbData)
+    console.log('Created OT:', created)
     res.status(201).json({ success: true, data: created })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: 'Internal server error' })
+    res.status(500).json({ success: false, message: 'Internal server error - createOT' })
   }
 }
 
 export const updateOt = async (req, res) => {
   try {
     const { id } = req.params
+
+  
     const body = req.body
 
     const exists = await OtModel.findById(id)
     if (!exists) {
-      return res.status(404).json({ success: false, message: 'OT not found' })
+      return res.status(404).json({ success: false, message: 'OT id not found' })
     }
 
     // Determine start and end times for calculation
@@ -115,6 +119,7 @@ export const updateOt = async (req, res) => {
 
 export const deleteOt = async (req, res) => {
   try {
+
     const { id } = req.params
 
     const exists = await OtModel.findById(id)

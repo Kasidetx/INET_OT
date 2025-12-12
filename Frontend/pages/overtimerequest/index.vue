@@ -123,10 +123,8 @@
                   <th class="text-left">{{ headers[2].text }}</th>
                   <th class="text-left">{{ headers[3].text }}</th>
                   <th class="text-left">{{ headers[4].text }}</th>
-                  <th class="text-left">{{ headers[5].text }}</th>
-                  <th class="text-center">{{ headers[6].text }}</th>
-                  <th class="text-center">{{ headers[7].text }}</th>
-                  <th class="text-center" width="80">{{ headers[8].text }}</th>
+                  <th class="text-center">{{ headers[5].text }}</th>
+                  <th class="text-center" width="80">{{ headers[6].text }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -143,7 +141,6 @@
                   </td>
                   <td class="font-weight-medium">{{ item.request_no }}</td>
                   <td class="black--text">{{ item.title }}</td>
-                  <td>{{ item.company }}</td>
                   <td>
                     <div>{{ item.startDate }}</div>
                     <div class="black--text caption">{{ item.startTime }}</div>
@@ -341,7 +338,6 @@ export default {
         { text: "ลำดับ", value: "index" },
         { text: "หมายเลขคำร้อง", value: "request_no" },
         { text: "รายละเอียด", value: "title" },
-        { text: "บริษัท", value: "company" },
         { text: "วัน-เวลาที่เริ่ม", value: "start" },
         { text: "วัน-เวลาที่สิ้นสุด", value: "end" },
         { text: "จำนวนชั่วโมง", value: "hours" },
