@@ -6,7 +6,7 @@ const OtDetailModel = {
   // ดึงรายการ detail ทั้งหมด
   async findAll() {
     const [rows] = await db.query(
-      'SELECT * FROM ot_detail ORDER BY id ASC'
+      'SELECT * FROM view_ot_detail ORDER BY id ASC'
     );
     return rows;
   },

@@ -2,10 +2,10 @@ import db from "../config/db.js";
 
 const OtModel = {
   
-  // async findAll() {
-  //   const [rows] = await db.query("SELECT * FROM view_emp_id_ot ORDER BY id ASC");
-  //   return rows;
-  // },
+  async findAll() {
+    const [rows] = await db.query("SELECT v.id, v.request_id, v.description, v.total, v.start_time, v.end_time, v.created_at, v.ot_status FROM view_emp_id_ot2 v ORDER BY id ASC");
+    return rows;
+  },
 
   // async findColumns() {
   //   const [rows] = await db.query("SHOW COLUMNS FROM ot");
@@ -13,7 +13,7 @@ const OtModel = {
   // },
 
   async findById(id) {
-    const [rows] = await db.query("SELECT v.id, v.request_id, v.description, v.total, v.start_time, v.end_time, v.created_at, v.ot_status FROM view_emp_id_ot v WHERE emp_id = ?", [id]);
+    const [rows] = await db.query("SELECT v.id, v.request_id, v.description, v.total, v.start_time, v.end_time, v.created_at, v.ot_status FROM view_emp_id_ot2 v WHERE emp_id = ?", [id]);
     return rows;
   },
 
