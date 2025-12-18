@@ -1,10 +1,4 @@
 {
-  "DialogReject": {
-    "description": "Auto imported from components/dialog/reject.vue"
-  },
-  "DialogSuccess": {
-    "description": "Auto imported from components/dialog/success.vue"
-  },
   "OvertimeOvertimeconditiontabs": {
     "description": "Auto imported from components/overtime/overtimeconditiontabs.vue"
   },
@@ -29,9 +23,6 @@
   "PositionSecPositionLevel": {
     "description": "Auto imported from components/position/SecPositionLevel.vue"
   },
-  "TemplateAvatarUpload": {
-    "description": "Auto imported from components/template/AvatarUpload.vue"
-  },
   "TimeattendanceDialogOvertimeConfirm": {
     "description": "Auto imported from components/timeattendance/DialogOvertimeConfirm.vue"
   },
@@ -40,5 +31,14 @@
   },
   "TimeattendanceDialogOvertimeSuccess": {
     "description": "Auto imported from components/timeattendance/DialogOvertimeSuccess.vue"
+  },
+  "TemplateAvatarUpload": {
+    "description": "Auto imported from components/template/AvatarUpload.vue"
+  },
+  "DialogReject": {
+    "description": "Auto imported from components/dialog/reject.vue"
+  },
+  "DialogSuccess": {
+    "description": "Auto imported from components/dialog/success.vue"
   }
 }

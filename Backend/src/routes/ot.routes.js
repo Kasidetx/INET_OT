@@ -1,24 +1,20 @@
 // src/routes/ot.routes.js
 import express from 'express'
 import {
-  getAllOt,
-  getOtById,
+  getAllEmployee,
   createOt,
   updateOt,
   deleteOt,
-  getOtColumns
+  getRequest,
+
 } from '../controllers/ot.controller.js'
 
 const router = express.Router()
 
 // GET /api/ot
-router.get('/', getAllOt)
+router.get('/', getAllEmployee)
 
-// GET /api/ot/columns
-router.get('/columns', getOtColumns)
-
-// GET /api/ot/:id
-router.get('/:id', getOtById)
+router.get('/request', getRequest)
 
 // POST /api/ot
 router.post('/', createOt)
