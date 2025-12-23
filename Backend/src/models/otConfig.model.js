@@ -1,9 +1,13 @@
 import db from '../config/db.js';
 
+// 1. พนักงานทำงานเวลาปกติ
+// 2. พนักงานเข้ากะทำงานปกติ
+// 3. พนักงานทำงานกะ 12 ชั่วโมง
+// 4. พนักงานทำงานตามชั่วโมง
+
 const OtConfigModel = {
     async findAll() {
-        const [rows] = await db.query('SELECT * FROM ot_config ORDER BY id ASC');
-        return rows;
+       
     },
 
 

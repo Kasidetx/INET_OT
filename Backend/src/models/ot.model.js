@@ -84,7 +84,6 @@ const OtModel = {
     return rows;
   },
 
-
   async create(data) {
     const sql = `
       INSERT INTO ot (request_id, start_time, end_time, description, emp_id, total, ot_status, created_by)
