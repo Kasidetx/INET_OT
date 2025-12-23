@@ -40,23 +40,11 @@
         <!-- SEARCH / FILTER -->
         <v-card class="pa-4 mb-4" outlined elevation="0">
           <v-row align="center" no-gutters>
-            <v-col cols="12" sm="6">
+            <v-col cols="12" sm="9">
               <v-text-field
                 v-model="q"
                 prepend-inner-icon="mdi-magnify"
                 placeholder="ค้นหารายการ..."
-                dense
-                outlined
-                hide-details
-                clearable
-              />
-            </v-col>
-
-            <v-col cols="6" sm="3" class="px-2">
-              <v-select
-                v-model="filterCompany"
-                :items="companies"
-                label="บริษัท :"
                 dense
                 outlined
                 hide-details
@@ -86,7 +74,7 @@
 
         <!-- TABLE LIST -->
         <v-card outlined elevation="0">
-          <v-card-title class="pb-0 blue--text d-flex justify-space-between align-center">
+          <v-card-title class="pb-4 blue--text d-flex justify-space-between align-center">
             <span>รายการเอกสาร {{ filteredItems.length }} รายการ</span>
             <div v-if="selectedItems.length > 0">
                 <v-btn
@@ -118,6 +106,7 @@
                       v-model="selectAll"
                       @change="toggleSelectAll"
                       hide-details
+                      class="mt-0 pt-0"
                     />
                   </th>
                   <th class="text-left" width="50">{{ headers[0].text }}</th>
@@ -125,10 +114,9 @@
                   <th class="text-left">{{ headers[2].text }}</th>
                   <th class="text-left">{{ headers[3].text }}</th>
                   <th class="text-left">{{ headers[4].text }}</th>
-                  <th class="text-left">{{ headers[5].text }}</th>
+                  <th class="text-center">{{ headers[5].text }}</th>
                   <th class="text-center">{{ headers[6].text }}</th>
-                  <th class="text-center">{{ headers[7].text }}</th>
-                  <th class="text-center" width="80">{{ headers[8].text }}</th>
+                  <th class="text-center" width="80">{{ headers[7].text }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -138,6 +126,7 @@
                       v-model="selectedItems"
                       :value="item.id"
                       hide-details
+                      class="mt-0 pt-0"
                     />
                   </td>
                   <td class="font-weight-bold">
@@ -145,7 +134,7 @@
                   </td>
                   <td class="font-weight-medium">{{ item.request_no }}</td>
                   <td class="black--text">{{ item.title }}</td>
-                  <td>{{ item.company }}</td>
+
                   <td>
                     <div>{{ item.startDate }}</div>
                     <div class="black--text caption">{{ item.startTime }}</div>
@@ -363,13 +352,13 @@
             class="rounded-lg"
           ></v-textarea>
 
-          <div class="d-flex justify-center gap-4 mt-2 mb-4">
+          <div class="d-flex justify-center gap-4 mt-6 mb-6">
              <v-btn
               outlined
               color="primary"
               width="140"
               height="44"
-              class="rounded-lg headline font-weight-medium mr-4"
+              class="rounded-lg headline font-weight-medium"
               style="font-size: 1rem !important; border-color: #1976d2;"
               @click="cancelDialog = false"
             >
@@ -444,7 +433,7 @@ export default {
 
       // --- Filters & Search (ตัวกรองและค้นหา) ---
       q: "",
-      filterCompany: null,
+
       filterYear: null,
       filterStatus: null,
 
@@ -454,7 +443,7 @@ export default {
 
       // --- Data Models (โมเดลข้อมูล) ---
       attendanceRecords: [],
-      companies: [],
+
       years: [],
       stats: [
         { icon: "mdi-file-document-outline", label: "ทั้งหมด", color: "blue" },
@@ -467,7 +456,7 @@ export default {
         { text: "ลำดับ", value: "index" },
         { text: "หมายเลขคำร้อง", value: "request_no" },
         { text: "รายละเอียด", value: "title" },
-        { text: "บริษัท", value: "company" },
+
         { text: "วัน-เวลาที่เริ่ม", value: "start" },
         { text: "วัน-เวลาที่สิ้นสุด", value: "end" },
         { text: "จำนวนชั่วโมง", value: "hours" },
@@ -495,7 +484,7 @@ export default {
 
   watch: {
     q() { this.resetSelection(); },
-    filterCompany() { this.resetSelection(); },
+
     filterYear() { this.resetSelection(); },
     filterStatus() { this.resetSelection(); },
     page() { this.selectAll = false; },
@@ -527,15 +516,12 @@ export default {
         items = items.filter(
           (it) =>
             (it.request_no || "").toLowerCase().includes(q) ||
-            (it.title || "").toLowerCase().includes(q) ||
-            (it.company || "").toLowerCase().includes(q)
+            (it.title || "").toLowerCase().includes(q)
         );
       }
       
       // Filter by Dropdowns
-      if (this.filterCompany) {
-        items = items.filter((it) => it.company === this.filterCompany);
-      }
+
       if (this.filterYear) {
         items = items.filter(
           (it) => it.startDate && it.startDate.includes(this.filterYear)
@@ -568,7 +554,7 @@ export default {
   },
 
   mounted() {
-    this.fetchCompanies();
+
     this.fetchYears();
     this.fetchRecords();
   },
@@ -577,99 +563,89 @@ export default {
     // =========================================
     // DATA GENERATION & FETCHING
     // =========================================
-    async fetchCompanies() {
-      // Mock handled in fetchRecords
-    },
+
 
     async fetchYears() {
       // Mock handled in fetchRecords
     },
 
-    generateMockData() {
-      const statuses = ["รออนุมัติ", "อนุมัติแล้ว", "ยกเลิก"]; 
-      const companies = ["Tech Solutions", "Innovate Corp", "Future Systems", "Global Services", "Alpha Tech", "Beta Solutions"];
-      const tasks = ["แก้ไขบั๊กระบบ", "Deploy Production", "Meeting ลูกค้า", "ทำรายงานประจำเดือน", "ซ่อมบำรุง Server", "Testing System", "Design UI/UX", "เขียนโปรแกรม", "อบรมพนักงาน", "วางแผนโครงการ"];
-      
-      const records = [];
-      const currentYear = new Date().getFullYear();
-      let index = 1;
-      
-      // สร้างข้อมูลจำลอง (Mock Data) 100 กลุ่มรายการ
-      for (let g = 1; g <= 100; g++) {
-        const groupSize = Math.floor(Math.random() * 3) + 1; 
-        const requestNo = `OT-${currentYear}${String(g).padStart(4, '0')}`;
-        const company = companies[Math.floor(Math.random() * companies.length)];
-        const task = tasks[Math.floor(Math.random() * tasks.length)];
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
-        
-        // Base date for the group
-        const baseDate = new Date();
-        baseDate.setDate(baseDate.getDate() - Math.floor(Math.random() * 60));
 
-        for (let i = 0; i < groupSize; i++) {
-            const date = new Date(baseDate);
-            const startHour = 8 + (i * 4); // Spread them out
-            const endHour = startHour + 2 + Math.floor(Math.random() * 2);
-            
-            if (startHour < 22) { // Ensure valid time
-                const dateStr = date.toISOString().split('T')[0];
-                records.push({
-                  id: index++,
-                  request_no: requestNo,
-                  description: task,
-                  company: company,
-                  start_time: `${dateStr}T${String(startHour).padStart(2, '0')}:00:00`,
-                  end_time: `${dateStr}T${String(endHour).padStart(2, '0')}:00:00`,
-                  total: endHour - startHour,
-                  status: status,
-                  cancellation_reason: status === 'ยกเลิก' ? 'ยกเลิกคำร้องขอเบิกค่าล่วงเวลา' : null
-                });
-            }
-        }
-      }
-      return records.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
-    },
 
-    // ฟังก์ชันดึงข้อมูล (ในที่นี้คือการสร้าง Mock Data)
+    // ฟังก์ชันดึงข้อมูลจาก API
     async fetchRecords() {
       this.loading = true;
       this.error = null;
       try {
-        console.log("Generating Mock Data...");
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network
+        const response = await axios.get(`${API_URL}/ot`);
+        if (response.data && response.data.success) {
+          const rawData = response.data.data;
+          
+          // Group by request_id
+          const groups = {};
+          rawData.forEach(item => {
+              // Ensure we have a key. If request_id is missing, fallback to id for uniqueness
+              const key = item.request_id || `REQ-${item.id}`; 
+              if (!groups[key]) {
+                  groups[key] = {
+                      items: [],
+                      totalHours: 0
+                  };
+              }
+              const hours = parseFloat(item.total) || 0;
+              groups[key].items.push(item);
+              groups[key].totalHours += hours;
+          });
 
-        const rawData = this.generateMockData();
+          // Convert groups to display array
+          const records = Object.values(groups).map(g => {
+              const first = g.items[0];
+              // Map DB status to text
+              // 1: รออนุมัติ, 2: อนุมัติแล้ว, 3: ไม่อนุมัติ, 4: ยกเลิก
+              const statusMap = { 1: 'รออนุมัติ', 2: 'อนุมัติแล้ว', 3: 'ไม่อนุมัติ', 4: 'ยกเลิก' };
+              const statusText = statusMap[first.ot_status] || 'รออนุมัติ'; 
 
-        this.attendanceRecords = rawData.map((item) => ({
-              id: item.id,
-              request_no: item.request_no,
-              title: item.description,
-              company: item.company,
-              startDate: this.formatISODate(item.start_time),
-              startTime: this.formatISOTime(item.start_time),
-              endDate: this.formatISODate(item.end_time),
-              endTime: this.formatISOTime(item.end_time),
-              hours: `${item.total} ชั่วโมง`,
-              status: item.status,
-              cancellation_reason: item.cancellation_reason
-            }));
+              // Format total hours to remove long decimals if integers, or keep 2 decimals
+              const totalH = g.totalHours;
+              const formattedHours = Number.isInteger(totalH) ? totalH : totalH.toFixed(2);
 
-        // Reset selections to ensure nothing is checked initially
+              return {
+                  id: first.id, // Use unique ID for selection
+                  request_no: first.request_id || "-", 
+                  title: first.description || "-",
+                  startDate: this.formatISODate(first.start_time),
+                  startTime: this.formatISOTime(first.start_time),
+                  endDate: this.formatISODate(first.end_time),
+                  endTime: this.formatISOTime(first.end_time),
+                  hours: `${formattedHours} ชั่วโมง`, // Summed hours
+                  status: statusText,
+                  cancellation_reason: first.cancellation_reason,
+                  children: g.items // Keep raw children for details
+              };
+          });
+
+          // Sort by ID descending (Newest first)
+          this.attendanceRecords = records.sort((a, b) => b.id - a.id);
+
+          // Populate filters (Year)
+          const yearSet = new Set();
+          rawData.forEach(r => {
+               if(r.start_time) {
+                 const y = new Date(r.start_time).getFullYear();
+                 if(y) yearSet.add(String(y));
+               }
+          });
+          this.years = Array.from(yearSet).sort().reverse();
+        } else {
+           throw new Error("Invalid response format");
+        }
+
+        // Reset selections
         this.selectedItems = [];
         this.selectAll = false;
             
-        // Populate filters
-        this.companies = [...new Set(rawData.map(r => r.company))].sort();
-        const yearSet = new Set();
-        rawData.forEach(r => {
-             const y = r.start_time.split('-')[0];
-             if(y) yearSet.add(y);
-        });
-        this.years = Array.from(yearSet).sort().reverse();
-
       } catch (err) {
-        console.error("Mock error:", err);
-        this.error = { message: "Failed to generate mock data" };
+        console.error("API Error:", err);
+        this.error = { message: "ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้" };
       } finally {
         this.loading = false;
       }
@@ -750,20 +726,26 @@ export default {
     // =========================================
     // ฟังก์ชันเปิดดูรายละเอียด (View)
     onView(item) {
-      this.selectedItem = item;
+      this.selectedItem = item; // Item is already aggregated
       
-      // Find all items with the same request_no for the group view
-      const related = this.attendanceRecords.filter(r => r.request_no === item.request_no);
-      this.relatedItems = related;
-      
-      // Calculate total hours
-      let totalHours = 0;
-      related.forEach(r => {
-          const h = parseFloat(r.hours.replace(' ชั่วโมง', '')) || 0;
-          totalHours += h;
-      });
-      // Override details for display
-      this.selectedItem = { ...item, hours: `${totalHours} ชั่วโมง` };
+      // Use children for the details table
+      // Need to format them to match the table expectations
+      if (item.children && item.children.length > 0) {
+          this.relatedItems = item.children.map(c => ({
+              startDate: this.formatISODate(c.start_time),
+              startTime: this.formatISOTime(c.start_time),
+              endTime: this.formatISOTime(c.end_time),
+              hours: c.total
+          }));
+      } else {
+          // Fallback if no children provided (shouldn't happen with new logic)
+           this.relatedItems = [{
+              startDate: item.startDate,
+              startTime: item.startTime,
+              endTime: item.endTime,
+              hours: parseFloat(item.hours) || 0
+           }];
+      }
 
       this.cancellationReason = "";
       this.viewDialog = true;
@@ -775,11 +757,25 @@ export default {
         return;
       }
 
-      // Convert selected IDs back to full item objects
-      const items = this.attendanceRecords.filter(r => this.selectedItems.includes(r.id));
+      // Convert selected IDs back to full item objects (these are Parent Groups)
+      const groupItems = this.attendanceRecords.filter(r => this.selectedItems.includes(r.id));
       
+      // Flatten all children from selected groups to be cancelled
+      let allChildren = [];
+      groupItems.forEach(group => {
+          if (group.children) {
+              allChildren = allChildren.concat(group.children.map(c => ({
+                   id: c.id,
+                   request_no: c.request_id,
+                   startDate: this.formatISODate(c.start_time),
+                   startTime: this.formatISOTime(c.start_time),
+                   endTime: this.formatISOTime(c.end_time)
+              })));
+          }
+      });
+
       this.cancellationReason = "";
-      this.itemsToCancel = items;
+      this.itemsToCancel = allChildren;
       this.cancelDialog = true;
     },
 
@@ -787,11 +783,22 @@ export default {
     async onCancelRequest() {
       this.cancellationReason = "";
       
-      // Cancel all items in this group
-      if (this.relatedItems && this.relatedItems.length > 0) {
-          this.itemsToCancel = [...this.relatedItems];
-      } else if (this.selectedItem) {
-          this.itemsToCancel = [this.selectedItem];
+      // Validate that we have items to cancel
+      if (this.selectedItem) {
+          // If we have children, we cancel all of them
+          // We need an array of objects that 'cancelDialog' expects
+          // cancelDialog expects items with request_no, startDate, etc.
+          if (this.selectedItem.children) {
+               this.itemsToCancel = this.selectedItem.children.map(c => ({
+                   id: c.id,
+                   request_no: c.request_id,
+                   startDate: this.formatISODate(c.start_time),
+                   startTime: this.formatISOTime(c.start_time),
+                   endTime: this.formatISOTime(c.end_time)
+               }));
+          } else {
+               this.itemsToCancel = [this.selectedItem];
+          }
       }
       
       this.viewDialog = false; 
@@ -805,13 +812,16 @@ export default {
       try {
         await new Promise(resolve => setTimeout(resolve, 800)); // Mock API delay
 
-        const idsToCancel = new Set(this.itemsToCancel.map(i => i.id));
-        
-        // Update local state
+        const cancelledRequestIds = new Set(this.itemsToCancel.map(i => i.request_no));
+
         this.attendanceRecords.forEach(r => {
-             if(idsToCancel.has(r.id)) {
+             if(cancelledRequestIds.has(r.request_no)) {
                  r.status = "ยกเลิก";
                  r.cancellation_reason = this.cancellationReason;
+                 // Update children stats if needed, or just visual update on parent
+                 if (r.children) {
+                     r.children.forEach(c => c.ot_status = 4);
+                 }
              }
         });
 

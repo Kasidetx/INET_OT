@@ -91,7 +91,9 @@
                 <div class="status-block">
                   <span class="small-label">สถานะ</span>
                   <span class="colon">:</span>
-                  <span class="status-value">{{ entry.status || "-" }}</span>
+                  <span class="status-value" :style="{ color: getStatusColor(entry._raw.ot_status) }">
+                    {{ entry.status }}
+                  </span>
                 </div>
               </div>
 
@@ -192,91 +194,85 @@ export default {
 
     async fetchTimeEntries() {
       try {
-        // ปรับ URL ถ้า backend อยู่ที่พอร์ตอื่น หรือใช้ proxy ใน dev config
-        const resp = await api.get("/api/ot");
-        console.log("Fetched OT entries:", resp.data);
-        if (resp.data && resp.data.success) {
-          const items = resp.data.data || [];
-          // map backend fields -> UI fields
+        const resp = await api.get("/api/ot/request");
+
+        // สมมติ resp.data คือก้อน JSON ที่คุณส่งมา
+        if (resp.data && resp.data.data) {
+          const items = resp.data.data;
+
           this.allTimeEntries = items.map((it) => {
             return {
               selected: false,
-              // ถ้า backend เก็บ start_time / end_time ในรูปแบบ ISO
-              date: this.formatDateShort(it.created_at) || "-",
-              status: "-",
-              checkIn: this.formatDateTimeLong(it.start_time) || it.start_time || "-",
-              checkOut: this.formatDateTimeLong(it.end_time) || it.end_time || "-",
+              request_id: it.request_id || "-",
+              date: this.formatDateShort(it.start_time),
+              status: this.getStatusText(it.ot_status),
+              checkIn: this.formatTimeOnly(it.start_time),
+              checkOut: this.formatTimeOnly(it.end_time),
+              total: it.total || "0",
               description: it.description || "-",
-              // keep raw for edit if needed
-              _raw: it,
+              _raw: it, // เก็บข้อมูลดิบไว้ใช้ตอน Edit หรือส่ง API
             };
           });
+
           this.timeEntries = [...this.allTimeEntries];
-          this.selectAll = false;
-        } else {
-          console.warn("No data from /api/ot", resp.data);
-          this.allTimeEntries = [];
-          this.timeEntries = [];
+          this.onSearch(); // กรองตามเดือน/ปี ที่เลือกไว้ตอนเริ่มต้น
         }
       } catch (err) {
-        console.error("Failed to load OT entries:", err);
-        // fallback to empty
-        this.allTimeEntries = [];
-        this.timeEntries = [];
+        console.error("Error fetching data:", err);
       }
+    },
+
+    getStatusText(status) {
+      const statusMap = {
+        1: "รออนุมัติ",
+        2: "อนุมัติแล้ว",
+        3: "ปฏิเสธ",
+      };
+      return statusMap[status] || "ไม่ระบุ";
+    },
+
+    getStatusColor(status) {
+      const colorMap = {
+        1: "#F57C00", // ส้ม
+        2: "#388E3C", // เขียว
+        3: "#D32F2F", // แดง
+      };
+      return colorMap[status] || "#333";
+    },
+
+    formatTimeOnly(iso) {
+      if (!iso) return "-";
+      const d = new Date(iso);
+      return d.toLocaleTimeString("th-TH", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }) + " น.";
     },
 
     formatDateShort(iso) {
-      if (!iso) return null;
-      try {
-        const d = new Date(iso);
-        return d.toLocaleDateString("th-TH", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }); // e.g. "ศ. 26 ก.ย. 2565"
-      } catch {
-        return iso;
-      }
+      if (!iso) return "-";
+      return new Date(iso).toLocaleDateString("th-TH", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
     },
 
-    formatDateTimeLong(iso) {
-      if (!iso) return null;
-      try {
-        const d = new Date(iso);
-        const date = d.toLocaleDateString("th-TH", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        });
-        const time = d.toLocaleTimeString("th-TH", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        });
-        return `${date} ${time} น.`;
-      } catch {
-        return iso;
-      }
-    },
-
+    // ปรับปรุง onSearch ให้ค้นหาจากข้อมูลที่ map มาแล้ว
     onSearch() {
       if (this.selectedYear && this.selectedMonth) {
+        const targetYear = parseInt(this.selectedYear); // พ.ศ.
         this.timeEntries = this.allTimeEntries.filter((entry) => {
-          const text = entry.checkIn || "";
-          return (
-            text.includes(this.selectedYear) &&
-            text.includes(this.selectedMonth)
-          );
+          const d = new Date(entry._raw.start_time);
+          const entryYear = d.getFullYear() + 543;
+          const entryMonth = this.monthList[d.getMonth()];
+
+          return entryYear === targetYear && entryMonth === this.selectedMonth;
         });
-        this.selectAll = false;
-      } else {
-        console.log("Please select both year and month to search.");
-        this.timeEntries = this.allTimeEntries;
-        this.selectAll = false;
       }
     },
+
     submitRequest() {
       // logic submit จริงค่อยมาใส่ทีหลัง
       const selected = this.timeEntries.filter((e) => e.selected);
