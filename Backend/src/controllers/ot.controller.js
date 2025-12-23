@@ -41,11 +41,25 @@ export const getOtById = async (req, res) => {
   }
 }
 
-const calculateHours = (start, end) => {
-  const startTime = new Date(start)
-  const endTime = new Date(end)
-  const diffMs = endTime - startTime
-  return diffMs / (1000 * 60 * 60) // Convert ms to hours
+const calculateOtHours = (start, end) => {
+  const startTime = new Date(start);
+  const endTime = new Date(end);
+  const diffMs = endTime - startTime;
+  
+  // 1. หาชั่วโมงรวมทั้งหมดที่เขาอยู่ในบริษัท (Total Presence)
+  let totalPresence = diffMs / (1000 * 60 * 60);
+
+  // 2. หักเวลาทำงานปกติออก (9 ชม. รวมพัก) เพื่อให้เหลือแต่ "ชั่วโมงโอทีดิบ"
+  // ถ้าทำไม่ถึง 9 ชม. แสดงว่าไม่มีโอที ให้เป็น 0
+  let otHours = totalPresence >= 9 ? totalPresence - 9 : 0;
+
+  // 3. เงื่อนไขหักพักโอที: ถ้าโอทีดิบ (เศษที่เกินมา) ครบหรือเกิน 2 ชม. ให้หักออกอีก 30 นาที (0.5 ชม.)
+  if (otHours >= 2) {
+    otHours = otHours - 0.5;
+  }
+
+  // ปัดเศษทศนิยม 2 ตำแหน่ง
+  return Math.round(otHours * 100) / 100;
 }
 
 const formatDateForMySQL = (isoDate) => {
@@ -71,7 +85,7 @@ export const createOt = async (req, res) => {
     }
     
     // Calculate total hours
-    const total = calculateHours(body.start_time, body.end_time)
+    const total = calculateOtHours(body.start_time, body.end_time)
 
     // Prepare data for DB
     const dbData = {

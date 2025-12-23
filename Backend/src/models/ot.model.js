@@ -22,7 +22,7 @@ const OtModel = {
         v.created_at,
         v.ot_status
 
-    FROM view_employee e 
+    FROM view_employee e
     LEFT JOIN view_emp_ot v ON e.emp_id = v.emp_id
     ORDER BY e.id ASC, v.created_at DESC`;
 
