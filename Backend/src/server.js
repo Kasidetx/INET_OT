@@ -7,6 +7,7 @@ import otDetailRoutes from './routes/otDetail.routes.js'
 import workdayRoutes from './routes/workday.routes.js'
 import otConfigRoutes from './routes/otConfig.routes.js'
 import empRoutes from './routes/emp.routes.js'
+import empTypes from './routes/empTypes.routes.js'
 
 dotenv.config()
 
@@ -29,7 +30,7 @@ app.use('/api/ot', otDetailRoutes);
 app.use('/api/workday', workdayRoutes)
 app.use('/api/otconfig', otConfigRoutes)
 app.use('/api/emp', empRoutes)
-
+app.use('/api/types', empTypes)
 // 404
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Not found' })

@@ -7,7 +7,9 @@ import db from '../config/db.js';
 
 const OtConfigModel = {
     async findAll() {
-       
+       const sql = 'SELECT * FROM ot_config'
+       const [rows] = await db.query(sql)
+       return rows
     },
 
 

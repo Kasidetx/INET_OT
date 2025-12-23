@@ -8,7 +8,7 @@ import {
 } from '../controllers/otConfig.controller.js';
 
 const router = express.Router();
-
+// api/otconfig
 router.get('/', getAllOtConfigs);
 router.get('/:id', getOtConfigById);
 router.post('/', createOtConfig);

@@ -78,6 +78,7 @@ const OtModel = {
     return Array.from(employeesMap.values());
   },
 
+  // หน้า 1
   async requestOt() {
     const sql = `SELECT o.id, o.request_id, o.description, o.start_time, o.end_time, o.total, o.request_id, o.ot_status FROM ot o ORDER BY id ASC`
     const [rows] = await db.query(sql)
