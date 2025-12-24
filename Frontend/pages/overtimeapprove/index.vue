@@ -1,157 +1,378 @@
 <template>
-  <v-app style="background-color: white; font-family: 'Sarabun', sans-serif;">
+  <v-app style="background-color: #F8F9FA; font-family: 'Sarabun', sans-serif;">
     <v-main class="pa-6">
-      
+
+      <!-- Tabs -->
       <div class="mb-6">
         <v-tabs background-color="transparent" color="#1E88E5" slider-size="3">
-          <v-tab class="font-weight-bold text-body-1 px-0 mr-8" style="letter-spacing: 0;">อนุมัติค่าล่วงเวลา</v-tab>
-          <v-tab class="font-weight-medium text-body-1 grey--text px-0" style="letter-spacing: 0;" disabled>อนุมัติค่ารักษา</v-tab>
+          <v-tab class="font-weight-bold text-body-1 px-0 mr-8" style="letter-spacing:0;">
+            อนุมัติค่าล่วงเวลา
+          </v-tab>
+          <v-tab class="font-weight-medium text-body-1 grey--text px-0" style="letter-spacing:0;" disabled>
+            อนุมัติค่ารักษา
+          </v-tab>
         </v-tabs>
         <v-divider></v-divider>
       </div>
 
-      <StatsGrid :stats="stats" />
-      
-      <FilterToolbar v-model="searchQuery" />
-
-      <EmployeeTable 
-        :items="employees" 
-        :loading="loading" 
+      <!-- Stats -->
+      <StatsGrid
+        :stats="stats"
+        :current-filter="statusFilter"
+        @update:filter="statusFilter = $event"
       />
 
-      <v-row class="mt-4 align-center justify-end">
-        <span class="caption grey--text mr-3">แสดง</span>
-        <v-select :items="[10, 20, 50]" value="10" dense outlined hide-details class="rounded-lg caption" style="max-width: 80px;"></v-select>
-        <span class="caption grey--text ml-3 mr-4">รายการต่อหน้า</span>
-        <span class="caption font-weight-medium mr-4">1-10 จาก 20</span>
-        <v-btn-toggle dense class="rounded-lg mr-2" borderless>
-          <v-btn small class="white"><v-icon small>mdi-chevron-left</v-icon></v-btn>
-          <v-btn small class="white"><v-icon small>mdi-chevron-right</v-icon></v-btn>
-        </v-btn-toggle>
-      </v-row>
+      <!-- Filter -->
+      <FilterToolbar v-model="searchQuery" />
+
+      <!-- ✅ WHITE BACKGROUND AREA (Table + Pagination) -->
+      <v-container fluid class="white-area mt-4 pa-4 rounded-xl">
+        <EmployeeTable
+          :key="tableKey"
+          :items="paginatedEmployees"
+          :total-items="filteredEmployees.length"
+          :loading="loading"
+          :is-selectable="isPendingMode"
+          v-model="selectedRequests"
+          @approve="openAction('approve')"
+          @reject="openAction('reject')"
+          @view="openTracking"
+        />
+
+        <v-row class="mt-4 align-center justify-end" v-if="filteredEmployees.length > 0">
+          <span class="caption grey--text mr-3">จำนวนแถว</span>
+
+          <v-select
+            v-model="itemsPerPage"
+            :items="[10, 20, 50]"
+            dense
+            outlined
+            hide-details
+            class="rounded-lg caption"
+            style="max-width: 80px;"
+            @change="page = 1"
+          />
+
+          <span class="caption grey--text ml-3 mr-4">รายการต่อหน้า</span>
+
+          <span class="caption font-weight-medium mr-4">
+            {{ paginationMeta }}
+          </span>
+
+          <div class="d-flex align-center">
+            <v-btn
+              small
+              class="white rounded-lg mr-2"
+              elevation="0"
+              style="border: 1px solid #e0e0e0; min-width: 32px;"
+              :disabled="page === 1"
+              @click="page--"
+            >
+              <v-icon small>mdi-chevron-left</v-icon>
+            </v-btn>
+
+            <v-btn
+              small
+              class="white rounded-lg"
+              elevation="0"
+              style="border: 1px solid #e0e0e0; min-width: 32px;"
+              :disabled="page >= pageCount"
+              @click="page++"
+            >
+              <v-icon small>mdi-chevron-right</v-icon>
+            </v-btn>
+          </div>
+        </v-row>
+      </v-container>
+
+      <!-- Dialogs (ลอยด้านนอก container ได้เลย) -->
+      <Dialog
+        v-model="actionDialog"
+        :type="actionType"
+        :items="selectedRequests"
+        :success="successDialog"
+        @confirm="confirmAction"
+        @done="onDialogDone"
+      />
+
+      <TrackingDialog
+        :key="trackingKey"
+        v-model="trackingDialog"
+        :item="trackingItem"
+        @close="trackingItem = null"
+      />
 
     </v-main>
   </v-app>
 </template>
 
 <script>
-import StatsGrid from '@/components/overtimeapprove/StatsGrid.vue';
-import FilterToolbar from '@/components/overtimeapprove/FilterToolbar.vue';
-import EmployeeTable from '@/components/overtimeapprove/EmployeeTable.vue';
-import api from "../../service/api";
+import StatsGrid from '@/components/overtimeapprove/StatsGrid.vue'
+import FilterToolbar from '@/components/overtimeapprove/FilterToolbar.vue'
+import EmployeeTable from '@/components/overtimeapprove/EmployeeTable.vue'
+import Dialog from '@/components/overtimeapprove/Dialog.vue'
+import TrackingDialog from '@/components/overtimeapprove/TrackingDialog.vue'
+import api from "../../service/api"
 
-// Utility Formatter (เหลือแค่นี้พอ)
-const dateFormatter = new Intl.DateTimeFormat('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' });
-const timeFormatter = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit' });
+const dateFormatter = new Intl.DateTimeFormat('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' })
+const timeFormatter = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit' })
 
 export default {
-  components: {
-    StatsGrid,
-    FilterToolbar,
-    EmployeeTable
-  },
+  components: { StatsGrid, FilterToolbar, EmployeeTable, Dialog, TrackingDialog },
+
   data() {
     return {
       loading: false,
       searchQuery: '',
-      // Stats Array: ส่วนนี้ยังต้องมีเพื่อแสดง Card ด้านบน (กำหนดสีของ Card ไว้ตรงนี้ได้เลย)
+      statusFilter: 'all',
+      page: 1,
+      itemsPerPage: 10,
+
+      tableKey: 0,
+      successDialog: false,
+
+      trackingDialog: false,
+      trackingItem: null,
+      trackingKey: 0,
+
       stats: [
-        { label: 'ทั้งหมด', count: 0, icon: 'mdi-file-document-outline', iconColor: '#1976D2', bg: '#E3F2FD', borderColor: '#BBDEFB' },       // Index 0
-        { label: 'รออนุมัติ', count: 0, icon: 'mdi-clock-time-four-outline', iconColor: '#F57C00', bg: '#FFF3E0', borderColor: '#FFE0B2' }, // Index 1
-        { label: 'อนุมัติ', count: 0, icon: 'mdi-check-circle-outline', iconColor: '#388E3C', bg: '#E8F5E9', borderColor: '#C8E6C9' },          // Index 3
-        { label: 'ไม่อนุมัติ', count: 0, icon: 'mdi-close-circle-outline', iconColor: '#D32F2F', bg: '#FFEBEE', borderColor: '#FFCDD2' },    // Index 4  // Index 5
-        { label: 'ยกเลิก', count: 0, icon: 'mdi-cancel', iconColor: '#616161', bg: '#F5F5F5', borderColor: '#E0E0E0' },                        // Index 6
+        { label: 'ทั้งหมด', filterKey: 'all', count: 0, icon: 'mdi-file-document-outline', color: '#1565C0', bg: '#E3F2FD' },
+        { label: 'รอหัวหน้าอนุมัติ', filterKey: 'pending_head', count: 0, icon: 'mdi-account-clock-outline', color: '#D97706', bg: '#FFF7ED' },
+        { label: 'รอ HR อนุมัติ', filterKey: 'pending_hr', count: 0, icon: 'mdi-briefcase-clock-outline', color: '#EAB308', bg: '#FEFCE8' },
+        { label: 'อนุมัติ', filterKey: 'approved', count: 0, icon: 'mdi-check-circle-outline', color: '#16A34A', bg: '#DCFCE7' },
+        { label: 'HR ไม่อนุมัติ', filterKey: 'rejected_hr', count: 0, icon: 'mdi-close-circle-outline', color: '#DC2626', bg: '#FEF2F2' },
+        { label: 'หัวหน้าไม่อนุมัติ', filterKey: 'rejected_head', count: 0, icon: 'mdi-account-remove-outline', color: '#EF4444', bg: '#FFEBEE' },
+        { label: 'ยกเลิก', filterKey: 'cancelled', count: 0, icon: 'mdi-file-hidden', color: '#4B5563', bg: '#F3F4F6' },
       ],
+
       employees: [],
-      // years: [], // ❌ ถ้าไม่ได้ทำ dropdown กรองปี ก็ลบตัวแปรนี้ทิ้งได้เลยครับ
-    };
+      selectedRequests: [],
+
+      actionDialog: false,
+      actionType: 'approve',
+    }
   },
-  methods: {
-    formatDateTime(isoString, type = 'date') {
-      if (!isoString) return "-";
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) return "-"; 
-      return type === 'time' ? timeFormatter.format(date) + " น." : dateFormatter.format(date);
-    },
-    
-    resetStats() {
-      this.stats.forEach(s => s.count = 0);
+
+  computed: {
+    isPendingMode() {
+      return ['pending_head', 'pending_hr'].includes(this.statusFilter)
     },
 
-    async fetchData() {
-      this.loading = true;
-      this.resetStats();
-      try {
-        const resp = await api.get("/api/ot");
-        const rawData = resp.data?.data || resp.data || [];
-        
-        const processedEmployees = rawData.map((emp, index) => {
-            let totalHoursVal = 0;
+    filteredEmployees() {
+      const q = (this.searchQuery || '').trim().toLowerCase()
+      const mode = this.statusFilter
 
-            const requests = (emp.ot_requests || []).map((ot, idx) => {
-                const duration = Number(ot.ot_duration || 0);
-                totalHoursVal += duration;
+      const STATUS_MAP = {
+        pending_head: [1],
+        pending_hr: [2],
+        approved: [3],
+        rejected_hr: [4],
+        rejected_head: [5],
+        cancelled: [6],
+      }
 
-                // ----------------------------------------------------
-                // ส่วนการนับ Stats (Clean ขึ้น)
-                // ----------------------------------------------------
-                // สมมติ Database ส่ง status เป็น: 
-                // 1=รอหัวหน้า, 2=รอHR, 3=อนุมัติ, 4=HRไม่, 5=หนไม่, 6=ยกเลิก
-                const statusId = Number(ot.ot_status) || 1; 
+      const matchStatus = (s) => {
+        if (mode === 'all') return true
+        const target = STATUS_MAP[mode] || []
+        return target.includes(Number(s))
+      }
 
-                this.stats[0].count++; // นับยอดรวมเสมอ
-                
-                // Map ID เข้ากับ Index ของ Array stats ด้านบน
-                // ถ้า ID ตรงกับ Index ก็ใช้ได้เลย หรือจะเขียน if/else เพื่อความชัวร์ก็ได้
-                if (statusId === 1) this.stats[1].count++;      // รอหัวหน้า
-                else if (statusId === 2) this.stats[2].count++; // อนุมัติ
-                else if (statusId === 3) this.stats[3].count++; // ไม่อนุมัติ
-                else if (statusId === 4) this.stats[4].count++; // ยกเลิก
-                // ----------------------------------------------------
+      return (this.employees || [])
+        .map(emp => {
+          const reqs = (emp.requests || []).filter(r => matchStatus(r.status))
+          const hay = `${emp.empCode} ${emp.name} ${emp.position}`.toLowerCase()
+          const passSearch = !q || hay.includes(q)
+          if (!passSearch || reqs.length === 0) return null
+          return { ...emp, requests: reqs, itemsCount: reqs.length }
+        })
+        .filter(Boolean)
+    },
 
-                const desc = ot.description || "-";
-                const detailParts = desc.split('\n');
+    pageCount() {
+      const c = Math.ceil(this.filteredEmployees.length / this.itemsPerPage)
+      return c > 0 ? c : 1
+    },
 
-                return {
-                    id: `${idx+1}`,
-                    reqNo: ot.request_id || "-",
-                    detailTitle: detailParts[0] || desc,
-                    detailDesc: detailParts[1] || "",
-                    hours: `${duration} ชั่วโมง`,
-                    start: `${this.formatDateTime(ot.start_time, 'date')} ${this.formatDateTime(ot.start_time, 'time')}`,
-                    end: `${this.formatDateTime(ot.end_time, 'date')} ${this.formatDateTime(ot.end_time, 'time')}`,
-                    transDate: this.formatDateTime(ot.created_at || ot.start_time, 'date'),
-                    
-                    // ✅ ส่งแค่ ID ไปก็พอ Component ลูกจัดการสีเอง
-                    status: statusId, 
-                };
-            });
+    paginatedEmployees() {
+      const start = (this.page - 1) * this.itemsPerPage
+      return this.filteredEmployees.slice(start, start + this.itemsPerPage)
+    },
 
-            return {
-                id: emp.eid || index,
-                rank: index + 1,
-                empCode: emp.employee_code || "-",
-                name: emp.employee_name || "-",
-                position: emp.position || "-",
-                department: emp.department || "-", 
-                company: emp.company || "iRecruit",
-                itemsCount: requests.length,
-                totalHours: totalHoursVal > 0 ? `${totalHoursVal} ชั่วโมง` : '-',
-                requests: requests
-            };
-        });
+    paginationMeta() {
+      const total = this.filteredEmployees.length
+      if (total === 0) return '0 จาก 0'
+      const start = (this.page - 1) * this.itemsPerPage + 1
+      const end = Math.min(this.page * this.itemsPerPage, total)
+      return `${start}-${end} จาก ${total}`
+    }
+  },
 
-        this.employees = Object.freeze(processedEmployees);
-
-      } catch (err) {
-        console.error("Fetch Error:", err);
-      } finally {
-        this.loading = false;
+  watch: {
+    statusFilter() {
+      this.selectedRequests = []
+      this.page = 1
+    },
+    filteredEmployees() {
+      this.page = 1
+    },
+    actionDialog(v) {
+      // พอ dialog ปิด (กดยืนยัน หรือ กดปิด)
+      if (!v) {
+        this.selectedRequests = []
+        this.tableKey++ // บังคับ reset EmployeeTable
       }
     }
   },
+
+  methods: {
+    formatDateTime(isoString, type = 'date') {
+      if (!isoString) return '-'
+      const date = new Date(isoString)
+      if (isNaN(date.getTime())) return '-'
+      return type === 'time'
+        ? timeFormatter.format(date) + ' น.'
+        : dateFormatter.format(date)
+    },
+
+    resetStats() {
+      this.stats.forEach(s => (s.count = 0))
+    },
+
+    openAction(type) {
+      if (!this.selectedRequests.length) return
+      this.actionDialog = false
+      this.actionType = type
+      this.actionDialog = true
+    },
+
+    async confirmAction({ type, reason, items }) {
+      console.log('🔥 confirmAction CALLED')
+      console.log('type:', type)
+      console.log('items:', items)
+
+      const selected = Array.isArray(items) ? items : []
+      const valid = selected.filter(it => it.otId)
+
+      console.log('valid:', valid)
+
+      if (!valid.length) {
+        console.warn('❌ NO valid items (no otId)')
+        this.actionDialog = false
+        return
+      }
+
+      let newStatus = type === 'approve'
+        ? 2 // รอ HR อนุมัติ
+        : (this.statusFilter === 'pending_hr' ? 4 : 5) // ไม่อนุมัติ (HR หรือ หัวหน้า)
+
+      console.log('newStatus:', newStatus)
+
+      try {
+        await Promise.all(
+          valid.map(it => {
+            console.log('➡️ PUT /api/ot/' + it.otId)
+            return api.put(`/api/ot/${it.otId}`, { ot_status: newStatus })
+          })
+        )
+
+        console.log('✅ UPDATE DONE')
+        this.successDialog = true
+        this.selectedRequests = []
+        this.tableKey++
+        await this.fetchData()
+      } catch (err) {
+        console.error("❌ Update OT error:", err)
+      }
+    },
+
+    onDialogDone() {
+      this.successDialog = false
+      this.actionDialog = false
+      this.selectedRequests = []
+    },
+
+    openTracking(item) {
+      this.trackingItem = item
+      this.trackingKey++
+      this.trackingDialog = true
+    },
+
+    async fetchData() {
+      this.loading = true
+      this.resetStats()
+
+      try {
+        const resp = await api.get("/api/ot")
+        const rawData = resp.data?.data || resp.data || []
+
+        const processedEmployees = rawData.map((emp, index) => {
+          let totalHoursVal = 0
+
+          const requests = (emp.ot_requests || []).map((ot, idx) => {
+            const duration = Number(ot.ot_duration || 0)
+            totalHoursVal += duration
+
+            const statusId = Number(ot.ot_status) || 1
+
+            // Count Stats
+            this.stats[0].count++
+            if (statusId === 1) this.stats[1].count++
+            else if (statusId === 2) this.stats[2].count++
+            else if (statusId === 3) this.stats[3].count++
+            else if (statusId === 4) this.stats[4].count++
+            else if (statusId === 5) this.stats[5].count++
+            else if (statusId === 6) this.stats[6].count++
+
+            const desc = ot.description || "-"
+
+            return {
+              id: idx + 1,
+              otId: ot.ot_id || ot.id || ot.otId,
+              reqNo: ot.request_id || "-",
+              transDate: this.formatDateTime(ot.created_at || ot.start_time, 'date'),
+              start: `${this.formatDateTime(ot.start_time, 'date')} ${this.formatDateTime(ot.start_time, 'time')}`,
+              end: `${this.formatDateTime(ot.end_time, 'date')} ${this.formatDateTime(ot.end_time, 'time')}`,
+              hours: `${duration} ชั่วโมง`,
+              detailTitle: desc.split('\n')[0] || desc,
+              detailDesc: desc.split('\n')[1] || "",
+              status: statusId,
+              empCode: emp.employee_code || "-",
+              empName: emp.employee_name || "-",
+              _rowKey: `${emp.employee_code || index}-${idx}`
+            }
+          })
+
+          return {
+            id: emp.eid || index,
+            rank: index + 1,
+            empCode: emp.employee_code || "-",
+            name: emp.employee_name || "-",
+            position: emp.position || "-",
+            company: emp.company || "iRecruit",
+            itemsCount: requests.length,
+            totalHours: totalHoursVal > 0 ? `${totalHoursVal} ชั่วโมง` : '-',
+            requests
+          }
+        })
+
+        this.employees = Object.freeze(processedEmployees)
+      } catch (err) {
+        console.error("Fetch Error:", err)
+      } finally {
+        this.loading = false
+      }
+    }
+  },
+
   mounted() {
-    this.fetchData();
+    this.fetchData()
   }
-};
+}
 </script>
+
+<style scoped>
+.white-area {
+  background-color: #ffffff;
+  border: 1px solid #eaeaea;
+}
+</style>

@@ -3,39 +3,51 @@ import dayjs from 'dayjs';
 const WORK_START_TIME = "08:30:00";
 const WORK_END_TIME = "17:30:00";
 const OtModel = {
-  async AllEmployee(empId) {
-    let sql = `
+ async AllEmployee(empId) {
+  let sql = `
     SELECT 
-        e.id AS employee_id,
-        e.emp_id AS employee_code,
-        e.name AS employee_name,
-        e.position,
-        e.request AS total_requests_count,
-        e.total_hour AS total_ot_hour_summary,
-        v.request_id,
-        v.description,
-        v.total AS ot_duration,
-        v.start_time,
-        v.end_time,
-        v.created_at,
-        v.ot_status
-    FROM view_employee e
-    LEFT JOIN view_emp_ot v ON e.emp_id = v.emp_id
-    `;
+      e.id AS employee_id,
+      e.emp_id AS employee_code,
+      e.name AS employee_name,
+      e.position,
 
-    const params = [];
+      -- รวมจำนวนรายการ OT ของพนักงาน
+      COUNT(o.id) AS total_requests_count,
 
-    // ตอนนี้รู้จัก empId แล้ว โค้ดนี้จะทำงานได้
-    if (empId) {
-      sql += ` WHERE e.emp_id = ? `;
-      params.push(empId);
-    }
+      -- รวมชั่วโมง OT
+      COALESCE(SUM(o.total), 0) AS total_ot_hour_summary,
 
-    sql += ` ORDER BY e.id ASC, v.created_at DESC`;
+      -- ✅ id จริงของ OT
+      o.id AS ot_id,
+      o.request_id,
+      o.description,
+      o.total AS ot_duration,
+      o.start_time,
+      o.end_time,
+      o.created_at,
+      o.ot_status
 
-    const [flatRows] = await db.query(sql, params);
-    return this.groupEmployeeData(flatRows);
-  },
+    FROM employee e
+    LEFT JOIN ot o 
+      ON e.emp_id = o.emp_id
+  `;
+
+  const params = [];
+
+  if (empId) {
+    sql += ` WHERE e.emp_id = ? `;
+    params.push(empId);
+  }
+
+  sql += `
+    GROUP BY e.id, o.id
+    ORDER BY e.id ASC, o.created_at DESC
+  `;
+
+  const [flatRows] = await db.query(sql, params);
+  return this.groupEmployeeData(flatRows);
+},
+
 
   generateNextDocNo(lastDocNo) {
     if (!lastDocNo) return 'OT-1';
@@ -173,6 +185,7 @@ const OtModel = {
       if (request_id) {
         // มีรายละเอียด OT
         const otRequestDetail = {
+          ot_id: row.ot_id, 
           request_id: row.request_id,
           description: row.description,
           ot_duration: row.ot_duration,
@@ -196,6 +209,12 @@ const OtModel = {
     const [rows] = await db.query(sql);
     return rows;
   },
+
+async findById(id) {
+  const [rows] = await db.query(`SELECT * FROM ot WHERE id = ?`, [id])
+  return rows[0] || null
+},
+
 
   async findActiveRequest(empId) {
     const sql =
@@ -249,33 +268,38 @@ const OtModel = {
     return { id: result.insertId, ...data };
   },
 
-  async update(id, data) {
-    const sql = `
-      UPDATE ot
-      SET request_id = ?, start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, ot_status = ?, created_by = ?
-      WHERE id = ?
-    `;
-
-    const values = [
-      data.request_id,
-      data.start_time,
-      data.end_time,
-      data.description || null,
-      data.emp_id,
-      data.total || 0,
-      data.ot_status || 1, // 1=Pending, 2=Approved, 3=Rejected, 4=Cancelled
-      data.created_by,
-      id,
-    ];
-
-    const [result] = await db.query(sql, values);
+   async update(id, data) {
+  // ✅ ถ้ามาแค่อัปเดตสถานะ (approve/reject)
+  if (data && data.ot_status !== undefined && Object.keys(data).length === 1) {
+    const [result] = await db.query(
+      `UPDATE ot SET ot_status = ? WHERE id = ?`,
+      [data.ot_status, id]
+    );
     return result.affectedRows > 0;
-  },
+  }
 
-  async remove(id) {
-    const [result] = await db.query("DELETE FROM ot WHERE id = ?", [id]);
-    return result.affectedRows > 0;
-  },
-};
+  // ✅ ถ้ามาแบบเต็ม (แก้เวลา/รายละเอียด ฯลฯ) ค่อยใช้ของเดิม
+  const sql = `
+    UPDATE ot
+    SET request_id = ?, start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, ot_status = ?, created_by = ?
+    WHERE id = ?
+  `;
+
+  const values = [
+    data.request_id,
+    data.start_time,
+    data.end_time,
+    data.description || null,
+    data.emp_id,
+    data.total || 0,
+    data.ot_status || 1,
+    data.created_by,
+    id,
+  ];
+
+  const [result] = await db.query(sql, values);
+  return result.affectedRows > 0;
+    },
+  };
 
 export default OtModel;

@@ -1,9 +1,39 @@
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
+    <div class="d-flex align-center justify-space-between mb-4">
       <h3 class="text-h6 font-weight-bold primary--text">
-        รายการเอกสารทั้งหมด <span class="black--text">{{ items.length }}</span> รายการ
+        รายการเอกสารทั้งหมด {{ totalItems }} รายการ
       </h3>
+
+      <div v-if="isSelectable" class="d-flex align-center">
+        <transition name="fade">
+          <span v-if="value.length > 0" class="caption grey--text mr-4 font-weight-bold">
+            เลือกแล้ว {{ value.length }} รายการ
+          </span>
+        </transition>
+
+        <v-btn
+          depressed outlined
+          class="rounded-lg px-6 mr-3 font-weight-bold"
+          height="40"
+          :disabled="value.length === 0"
+          :color="value.length > 0 ? 'error' : 'grey darken-1'"
+          @click="$emit('reject')"
+        >
+          ไม่อนุมัติ
+        </v-btn>
+
+        <v-btn
+          depressed
+          class="rounded-lg px-6 font-weight-bold white--text"
+          height="40"
+          :disabled="value.length === 0"
+          :class="value.length > 0 ? 'success' : 'grey lighten-1'"
+          @click="$emit('approve')"
+        >
+          อนุมัติ
+        </v-btn>
+      </div>
     </div>
 
     <v-data-table
@@ -15,13 +45,14 @@
       class="elevation-0 rounded-0 custom-table"
       hide-default-footer
       :loading="loading"
+      :items-per-page="-1"
     >
       <template v-slot:item.data-table-expand="{ expand, isExpanded }">
-          <v-btn icon small @click="expand(!isExpanded)">
-            <v-icon :color="isExpanded ? 'primary' : 'grey'">
-              {{ isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-            </v-icon>
-          </v-btn>
+        <v-btn icon small @click="expand(!isExpanded)">
+          <v-icon :color="isExpanded ? 'primary' : 'grey'">
+            {{ isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+          </v-icon>
+        </v-btn>
       </template>
 
       <template v-slot:item.totalHours="{ item }">
@@ -30,7 +61,14 @@
 
       <template v-slot:expanded-item="{ headers, item }">
         <td :colspan="headers.length" class="pa-0 white">
-          <RequestSubTable :items="item.requests" />
+        <RequestSubTable
+  :items="item.requests"
+  :selectable="isSelectable"
+  :itemKey="'reqNo'"
+  :selected.sync="selectedRequestsByEmp[item.id]"
+  @view="$emit('view', $event)"
+/>
+
         </td>
       </template>
     </v-data-table>
@@ -38,47 +76,93 @@
 </template>
 
 <script>
-// ✅ Import จากโฟลเดอร์เดียวกัน
-import RequestSubTable from './RequestSubTable.vue';
+import RequestSubTable from "./RequestSubTable.vue";
 
 export default {
-  name: 'EmployeeTable',
+  name: "EmployeeTable",
   components: { RequestSubTable },
   props: {
-    items: Array,
-    loading: Boolean
+    items: { type: Array, default: () => [] },
+    totalItems: { type: Number, default: 0 },
+    loading: Boolean,
+
+    // ✅ v-model รวม selected ทั้งหมด
+    value: { type: Array, default: () => [] },
+
+    // ✅ เปิด checkbox + ปุ่มอนุมัติ เฉพาะโหมด pending
+    isSelectable: { type: Boolean, default: false } 
   },
   data() {
     return {
       expanded: [],
+      selectedRequestsByEmp: {},
+
       headers: [
-        { text: 'ลำดับ', value: 'rank', align: 'center', sortable: false, width: '50px' },
-        { text: 'รหัสพนักงาน', value: 'empCode', sortable: false, class: 'grey--text text--darken-2' },
-        { text: 'ชื่อ-นามสกุล', value: 'name', sortable: false, class: 'font-weight-bold' },
-        { text: 'ตำแหน่ง', value: 'position', sortable: false },
-        { text: 'แผนก', value: 'department', sortable: false },
-        { text: 'บริษัท', value: 'company', sortable: false },
-        { text: 'จำนวนรายการ', value: 'itemsCount', align: 'center', sortable: false },
-        { text: 'รวมชั่วโมง', value: 'totalHours', align: 'center', sortable: false },
-        { text: '', value: 'data-table-expand', align: 'end' },
+        { text: "ลำดับ", value: "rank", align: "center", sortable: false, width: "50px" },
+        { text: "รหัสพนักงาน", value: "empCode", sortable: false, class: "grey--text text--darken-2" },
+        { text: "ชื่อ-นามสกุล", value: "name", sortable: false, class: "font-weight-bold" },
+        { text: "ตำแหน่ง", value: "position", sortable: false },
+        { text: "บริษัท", value: "company", sortable: false },
+        { text: "จำนวนรายการ", value: "itemsCount", align: "center", sortable: false },
+        { text: "รวมชั่วโมง", value: "totalHours", align: "center", sortable: false },
+        { text: "", value: "data-table-expand", align: "end" }
       ],
-    }
+    };
+  },
+  watch: {
+    // ✅ กัน selectedRequestsByEmp[item.id] undefined
+    items: {
+      immediate: true,
+      deep: true,
+      handler(list) {
+        (list || []).forEach(emp => {
+          if (this.selectedRequestsByEmp[emp.id] === undefined) {
+            this.$set(this.selectedRequestsByEmp, emp.id, []);
+          }
+        });
+      }
+    },
+
+    // ✅ รวม selected ทุก emp -> ส่งขึ้น parent เป็น v-model
+    selectedRequestsByEmp: {
+      deep: true,
+      handler(val) {
+        const all = Object.values(val).flat();
+
+        // กันซ้ำด้วย reqNo
+        const seen = new Set();
+        const unique = [];
+        for (const it of all) {
+          const k = it?.reqNo;
+          if (!k) continue;
+          if (seen.has(k)) continue;
+          seen.add(k);
+          unique.push(it);
+        }
+
+        this.$emit("input", unique);
+      }
+    },
+    
+  },
+  methods: {
+  onView(reqItem) {
+    // ส่งขึ้นไปยังหน้า index.vue
+    this.$emit("view", reqItem)
   }
 }
+
+};
 </script>
 
 <style>
-.custom-table.v-data-table {
-  border: 1px solid #E0E0E0;
-}
+.custom-table.v-data-table { border: 1px solid #E0E0E0; }
 .custom-table .v-data-table-header th {
-  background-color: #EEEEEE !important;
+  background: #EEEEEE !important;
   color: #424242 !important;
-  font-size: 0.95rem !important;
   font-weight: 700 !important;
-  letter-spacing: 0.5px;
 }
-.custom-table tbody tr:hover:not(.v-data-table__expanded__content) {
-  background-color: #F0F7FF !important;
-}
+.success { background:#4CAF50 !important; border-color:#4CAF50 !important; }
+.fade-enter-active, .fade-leave-active { transition: opacity .3s; }
+.fade-enter, .fade-leave-to { opacity: 0; }
 </style>

@@ -56,7 +56,7 @@ export default {
         },
         5: { 
           label: "หัวหน้าไม่อนุมัติ", 
-          bg: "#FF57FF", // แดงอ่อน
+          bg: "#FEF2F2", // แดงอ่อน
           text: "#8B0000", // แดงเข้ม
           border: "#FECACA" 
         },
