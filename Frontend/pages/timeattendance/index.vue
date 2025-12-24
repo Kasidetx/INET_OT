@@ -91,9 +91,8 @@
                 <div class="status-block">
                   <span class="small-label">สถานะ</span>
                   <span class="colon">:</span>
-                  <span class="status-value" :style="{ color: getStatusColor(entry._raw.ot_status) }">
-                    {{ entry.status }}
-                  </span>
+                  
+                  <Status :value="entry._raw.ot_status" />
                 </div>
               </div>
 
@@ -140,6 +139,7 @@
 <script>
 import DialogOvertimeForm from "@/components/timeattendance/DialogOvertimeForm.vue";
 import DialogOvertimeConfirm from "@/components/timeattendance/DialogOvertimeConfirm.vue";
+import Status from "@/components/global/Status.vue"; // ตรวจสอบ path ให้ถูกต้อง
 import api from "../../service/api";
 
 export default {
@@ -147,6 +147,7 @@ export default {
   components: {
     DialogOvertimeForm,
     DialogOvertimeConfirm,
+    Status
   },
   data() {
     const THAI_MONTHS = [
@@ -205,7 +206,7 @@ export default {
               selected: false,
               request_id: it.request_id || "-",
               date: this.formatDateShort(it.start_time),
-              status: this.getStatusText(it.ot_status),
+              status: it.ot_status,
               checkIn: this.formatTimeOnly(it.start_time),
               checkOut: this.formatTimeOnly(it.end_time),
               total: it.total || "0",
@@ -221,25 +222,6 @@ export default {
         console.error("Error fetching data:", err);
       }
     },
-
-    getStatusText(status) {
-      const statusMap = {
-        1: "รออนุมัติ",
-        2: "อนุมัติแล้ว",
-        3: "ปฏิเสธ",
-      };
-      return statusMap[status] || "ไม่ระบุ";
-    },
-
-    getStatusColor(status) {
-      const colorMap = {
-        1: "#F57C00", // ส้ม
-        2: "#388E3C", // เขียว
-        3: "#D32F2F", // แดง
-      };
-      return colorMap[status] || "#333";
-    },
-
     formatTimeOnly(iso) {
       if (!iso) return "-";
       const d = new Date(iso);

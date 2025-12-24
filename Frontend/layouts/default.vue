@@ -108,6 +108,12 @@ export default {
           to: '/overtimerequest',
           roles: ['HR']
         },
+        {
+          icon: 'mdi-clock',
+          title: 'อนุมัติค่าล่วงเวลา',
+          to: '/overtimeapprove',
+          roles: ['HR']
+        },
       ],
     };
   },
