@@ -12,6 +12,7 @@ const OtModel = {
         e.position,
         e.request AS total_requests_count,
         e.total_hour AS total_ot_hour_summary,
+        v.id AS ot_id,
         v.request_id,
         v.description,
         v.total AS ot_duration,
@@ -173,6 +174,7 @@ const OtModel = {
       if (request_id) {
         // มีรายละเอียด OT
         const otRequestDetail = {
+          ot_id: row.ot_id,
           request_id: row.request_id,
           description: row.description,
           ot_duration: row.ot_duration,
@@ -252,18 +254,17 @@ const OtModel = {
   async update(id, data) {
     const sql = `
       UPDATE ot
-      SET request_id = ?, start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, ot_status = ?, created_by = ?
+      SET start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, sts = ?, created_by = ?
       WHERE id = ?
     `;
 
     const values = [
-      data.request_id,
       data.start_time,
       data.end_time,
       data.description || null,
       data.emp_id,
       data.total || 0,
-      data.ot_status || 1, // 1=Pending, 2=Approved, 3=Rejected, 4=Cancelled
+      data.sts || 1, // 1=Pending, 2=Approved, 3=Rejected, 4=Cancelled
       data.created_by,
       id,
     ];

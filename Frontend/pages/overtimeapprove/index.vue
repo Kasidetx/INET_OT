@@ -16,42 +16,22 @@
       </div>
 
       <!-- Stats -->
-      <StatsGrid
-        :stats="stats"
-        :current-filter="statusFilter"
-        @update:filter="statusFilter = $event"
-      />
+      <StatsGrid :stats="stats" :current-filter="statusFilter" @update:filter="statusFilter = $event" />
 
       <!-- Filter -->
       <FilterToolbar v-model="searchQuery" />
 
       <!-- ✅ WHITE BACKGROUND AREA (Table + Pagination) -->
       <v-container fluid class="white-area mt-4 pa-4 rounded-xl">
-        <EmployeeTable
-          :key="tableKey"
-          :items="paginatedEmployees"
-          :total-items="filteredEmployees.length"
-          :loading="loading"
-          :is-selectable="isPendingMode"
-          v-model="selectedRequests"
-          @approve="openAction('approve')"
-          @reject="openAction('reject')"
-          @view="openTracking"
-        />
+        <EmployeeTable :key="tableKey" :items="paginatedEmployees" :total-items="filteredEmployees.length"
+          :loading="loading" :is-selectable="isPendingMode" v-model="selectedRequests" @approve="openAction('approve')"
+          @reject="openAction('reject')" @view="openTracking" />
 
         <v-row class="mt-4 align-center justify-end" v-if="filteredEmployees.length > 0">
           <span class="caption grey--text mr-3">จำนวนแถว</span>
 
-          <v-select
-            v-model="itemsPerPage"
-            :items="[10, 20, 50]"
-            dense
-            outlined
-            hide-details
-            class="rounded-lg caption"
-            style="max-width: 80px;"
-            @change="page = 1"
-          />
+          <v-select v-model="itemsPerPage" :items="[10, 20, 50]" dense outlined hide-details class="rounded-lg caption"
+            style="max-width: 80px;" @change="page = 1" />
 
           <span class="caption grey--text ml-3 mr-4">รายการต่อหน้า</span>
 
@@ -60,25 +40,13 @@
           </span>
 
           <div class="d-flex align-center">
-            <v-btn
-              small
-              class="white rounded-lg mr-2"
-              elevation="0"
-              style="border: 1px solid #e0e0e0; min-width: 32px;"
-              :disabled="page === 1"
-              @click="page--"
-            >
+            <v-btn small class="white rounded-lg mr-2" elevation="0" style="border: 1px solid #e0e0e0; min-width: 32px;"
+              :disabled="page === 1" @click="page--">
               <v-icon small>mdi-chevron-left</v-icon>
             </v-btn>
 
-            <v-btn
-              small
-              class="white rounded-lg"
-              elevation="0"
-              style="border: 1px solid #e0e0e0; min-width: 32px;"
-              :disabled="page >= pageCount"
-              @click="page++"
-            >
+            <v-btn small class="white rounded-lg" elevation="0" style="border: 1px solid #e0e0e0; min-width: 32px;"
+              :disabled="page >= pageCount" @click="page++">
               <v-icon small>mdi-chevron-right</v-icon>
             </v-btn>
           </div>
@@ -86,21 +54,10 @@
       </v-container>
 
       <!-- Dialogs (ลอยด้านนอก container ได้เลย) -->
-      <Dialog
-        v-model="actionDialog"
-        :type="actionType"
-        :items="selectedRequests"
-        :success="successDialog"
-        @confirm="confirmAction"
-        @done="onDialogDone"
-      />
+      <Dialog v-model="actionDialog" :type="actionType" :items="selectedRequests" :success="successDialog"
+        @confirm="confirmAction" @done="onDialogDone" />
 
-      <TrackingDialog
-        :key="trackingKey"
-        v-model="trackingDialog"
-        :item="trackingItem"
-        @close="trackingItem = null"
-      />
+      <TrackingDialog :key="trackingKey" v-model="trackingDialog" :item="trackingItem" @close="trackingItem = null" />
 
     </v-main>
   </v-app>
@@ -140,8 +97,8 @@ export default {
         { label: 'รอหัวหน้าอนุมัติ', filterKey: 'pending_head', count: 0, icon: 'mdi-account-clock-outline', color: '#D97706', bg: '#FFF7ED' },
         { label: 'รอ HR อนุมัติ', filterKey: 'pending_hr', count: 0, icon: 'mdi-briefcase-clock-outline', color: '#EAB308', bg: '#FEFCE8' },
         { label: 'อนุมัติ', filterKey: 'approved', count: 0, icon: 'mdi-check-circle-outline', color: '#16A34A', bg: '#DCFCE7' },
-        { label: 'HR ไม่อนุมัติ', filterKey: 'rejected_hr', count: 0, icon: 'mdi-close-circle-outline', color: '#DC2626', bg: '#FEF2F2' },
         { label: 'หัวหน้าไม่อนุมัติ', filterKey: 'rejected_head', count: 0, icon: 'mdi-account-remove-outline', color: '#EF4444', bg: '#FFEBEE' },
+        { label: 'HR ไม่อนุมัติ', filterKey: 'rejected_hr', count: 0, icon: 'mdi-close-circle-outline', color: '#DC2626', bg: '#FEF2F2' },
         { label: 'ยกเลิก', filterKey: 'cancelled', count: 0, icon: 'mdi-file-hidden', color: '#4B5563', bg: '#F3F4F6' },
       ],
 
@@ -166,8 +123,8 @@ export default {
         pending_head: [1],
         pending_hr: [2],
         approved: [3],
-        rejected_hr: [4],
-        rejected_head: [5],
+        rejected_head: [4],
+        rejected_hr: [5],
         cancelled: [6],
       }
 
@@ -247,41 +204,64 @@ export default {
 
     async confirmAction({ type, reason, items }) {
       console.log('🔥 confirmAction CALLED')
-      console.log('type:', type)
-      console.log('items:', items)
 
-      const selected = Array.isArray(items) ? items : []
-      const valid = selected.filter(it => it.otId)
+      // 1. ตรวจสอบข้อมูลที่ถูกเลือก (Items)
+      const selected = Array.isArray(items) ? items : (this.selectedRequests || [])
 
-      console.log('valid:', valid)
+      // กรองเอาเฉพาะรายการที่มี otId (ป้องกัน Error)
+      const validItems = selected.filter(it => it.otId)
 
-      if (!valid.length) {
-        console.warn('❌ NO valid items (no otId)')
+      if (validItems.length === 0) {
+        console.warn('❌ ไม่พบรายการที่มี otId')
         this.actionDialog = false
         return
       }
 
-      let newStatus = type === 'approve'
-        ? 2 // รอ HR อนุมัติ
-        : (this.statusFilter === 'pending_hr' ? 4 : 5) // ไม่อนุมัติ (HR หรือ หัวหน้า)
-
-      console.log('newStatus:', newStatus)
+      console.log(`Processing ${validItems.length} items...`)
 
       try {
+        // 2. วนลูปยิง API ทีละรายการ (หรือจะทำ Backend ให้รับเป็น Array ก็ได้ แต่วิธีนี้ชัวร์สุดกับ Backend เดิม)
         await Promise.all(
-          valid.map(it => {
-            console.log('➡️ PUT /api/ot/' + it.otId)
-            return api.put(`/api/ot/${it.otId}`, { ot_status: newStatus })
+          validItems.map(item => {
+            const currentStatus = Number(item.status) // สถานะปัจจุบัน
+            let nextStatus = currentStatus // สถานะถัดไป (Default)
+
+            // --- Logic เปลี่ยนสถานะ ---
+            if (type === 'approve') {
+              // กรณีอนุมัติ
+              if (currentStatus === 1) nextStatus = 2      // รอหัวหน้า -> รอ HR
+              else if (currentStatus === 2) nextStatus = 3 // รอ HR -> อนุมัติ
+            } else {
+              // กรณีไม่อนุมัติ
+              if (currentStatus === 1) nextStatus = 4      // รอหัวหน้า -> หัวหน้าไม่อนุมัติ
+              else if (currentStatus === 2) nextStatus = 5 // รอ HR -> HR ไม่อนุมัติ
+            }
+
+            // ถ้าสถานะไม่เปลี่ยน (เช่น กดผิด) ไม่ต้องยิง API
+            if (nextStatus === currentStatus) return Promise.resolve()
+
+            console.log(`➡️ Update OT ID: ${item.otId} | Status: ${currentStatus} -> ${nextStatus}`)
+
+            // ส่งข้อมูลไปอัปเดต
+            return api.put(`/api/ot/${item.otId}`, {
+              sts: nextStatus,
+              // ส่ง reason ไปด้วยเผื่อ Backend รองรับการบันทึกเหตุผล
+              description: reason ? `${item.detailTitle || ''} (หมายเหตุ: ${reason})` : undefined
+            })
           })
         )
 
-        console.log('✅ UPDATE DONE')
+        console.log('✅ Update All Success')
+
+        // 3. ปิด Dialog และโหลดข้อมูลใหม่
         this.successDialog = true
-        this.selectedRequests = []
-        this.tableKey++
-        await this.fetchData()
+        this.selectedRequests = [] // เคลียร์รายการที่เลือก
+        this.tableKey++ // บังคับ Rerender ตาราง
+        await this.fetchData() // ดึงข้อมูลใหม่จาก DB
+
       } catch (err) {
         console.error("❌ Update OT error:", err)
+        alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง')
       }
     },
 
@@ -307,7 +287,7 @@ export default {
 
         const processedEmployees = rawData.map((emp, index) => {
           let totalHoursVal = 0
-
+          console.log(emp)
           const requests = (emp.ot_requests || []).map((ot, idx) => {
             const duration = Number(ot.ot_duration || 0)
             totalHoursVal += duration
@@ -332,6 +312,8 @@ export default {
               transDate: this.formatDateTime(ot.created_at || ot.start_time, 'date'),
               start: `${this.formatDateTime(ot.start_time, 'date')} ${this.formatDateTime(ot.start_time, 'time')}`,
               end: `${this.formatDateTime(ot.end_time, 'date')} ${this.formatDateTime(ot.end_time, 'time')}`,
+              timeStart: this.formatDateTime(ot.start_time, 'time'),
+              timeEnd: this.formatDateTime(ot.end_time, 'time'),
               hours: `${duration} ชั่วโมง`,
               detailTitle: desc.split('\n')[0] || desc,
               detailDesc: desc.split('\n')[1] || "",

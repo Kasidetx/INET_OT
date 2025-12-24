@@ -7,6 +7,13 @@ import dayjs from 'dayjs';
 
 const formatDateForMySQL = (dateObj) => dayjs(dateObj).format('YYYY-MM-DD HH:mm:ss');
 
+const calculateHours = (start, end) => {
+  const s = dayjs(start);
+  const e = dayjs(end);
+  const diffMinutes = e.diff(s, 'minute');
+  return diffMinutes > 0 ? parseFloat((diffMinutes / 60).toFixed(2)) : 0;
+};
+
 export const getAllEmployee = async (req, res) => {
   try {
     // รับค่า ?emp_id=xxx จาก URL
@@ -124,25 +131,22 @@ export const createOt = async (req, res) => {
 export const updateOt = async (req, res) => {
   try {
     const { id } = req.params
-
-  
     const body = req.body
 
+    // 1. ดึงข้อมูลเก่าออกมาก่อน
     const exists = await OtModel.findById(id)
     if (!exists) {
       return res.status(404).json({ success: false, message: 'OT id not found' })
     }
 
-    // Determine start and end times for calculation
     const startTime = body.start_time || exists.start_time
     const endTime = body.end_time || exists.end_time
-
-    // Calculate total hours
     const total = calculateHours(startTime, endTime)
 
-    // Prepare data for DB
+    // 2. ✅ รวมร่างข้อมูล: เอาของเก่าตั้ง (exists) ทับด้วยของใหม่ (body)
     const dbData = {
-      ...body,
+      ...exists,       // <-- สำคัญมาก! ข้อมูล request_id, emp_id จะมาจากตรงนี้
+      ...body,         // <-- ค่า sts ที่ส่งมาจาก Frontend จะมาทับตรงนี้
       start_time: formatDateForMySQL(startTime),
       end_time: formatDateForMySQL(endTime),
       total

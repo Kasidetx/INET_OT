@@ -1,10 +1,6 @@
 <template>
-  <v-dialog
-    v-model="visible"
-    :max-width="step === 'success' ? 520 : (type === 'approve' ? 520 : 820)"
-    :scrollable="step !== 'success' && type !== 'approve'"
-    persistent
-  >
+  <v-dialog v-model="visible" :max-width="step === 'success' ? 520 : (type === 'approve' ? 520 : 820)"
+    :scrollable="step !== 'success' && type !== 'approve'" persistent>
     <v-card class="rounded-xl" style="overflow:hidden; max-height:90vh;">
 
       <!-- ===================== SUCCESS ===================== -->
@@ -73,7 +69,8 @@
               ยกเลิก
             </v-btn>
 
-            <v-btn color="primary" class="px-10 ml-4 rounded-lg font-weight-bold white--text" height="44" @click="confirm">
+            <v-btn color="primary" class="px-10 ml-4 rounded-lg font-weight-bold white--text" height="44"
+              @click="confirm">
               ยืนยัน
             </v-btn>
           </v-card-actions>
@@ -81,10 +78,8 @@
 
         <!-- REJECT (แบบละเอียด) -->
         <template v-else>
-          <v-card-title
-            class="d-flex justify-center align-center px-4 py-3"
-            style="background-color:#E3F2FD; position:relative;"
-          >
+          <v-card-title class="d-flex justify-center align-center px-4 py-3"
+            style="background-color:#E3F2FD; position:relative;">
             <span class="font-weight-bold text-h6" style="color:#1565C0;">
               ไม่อนุมัติคำร้องเบิกค่าล่วงเวลา
             </span>
@@ -108,11 +103,8 @@
             </div>
 
             <div class="pa-4 grey lighten-4 rounded-lg mb-4 custom-scroll" style="height:320px; overflow-y:auto;">
-              <v-card
-                v-for="(it, i) in safeItems"
-                :key="(it.otId || it.reqNo) || i"
-                class="mb-4 rounded-lg elevation-0 white pa-5"
-              >
+              <v-card v-for="(it, i) in safeItems" :key="(it.otId || it.reqNo) || i"
+                class="mb-4 rounded-lg elevation-0 white pa-5">
                 <div class="font-weight-bold mb-4 text-h6 text--primary">รายการที่ {{ i + 1 }}</div>
 
                 <v-row>
@@ -128,20 +120,40 @@
                       <span class="info-value">{{ it.transDate }}</span>
                     </div>
                   </v-col>
+
+                  <v-col cols="12" md="6" class="py-1">
+                    <div class="info-row">
+                      <span class="info-label">รหัสพนักงาน</span><span class="info-sep">:</span>
+                      <span class="info-value">{{ it.empCode }}</span>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6" class="py-1">
+                    <div class="info-row">
+                      <span class="info-label">ชื่อ-นามสกุล</span><span class="info-sep">:</span>
+                      <span class="info-value">{{ it.empName }}</span>
+                    </div>
+                  </v-col>
+
+                  <v-col cols="12" md="6" class="py-1">
+                    <div class="info-row">
+                      <span class="info-label">เวลาที่เริ่ม</span><span class="info-sep">:</span>
+                      <span class="info-value">{{ it.timeStart }}</span>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6" class="py-1">
+                    <div class="info-row">
+                      <span class="info-label">เวลาที่สิ้นสุด</span><span class="info-sep">:</span>
+                      <span class="info-value">{{ it.timeEnd }}</span>
+                    </div>
+                  </v-col>
                 </v-row>
               </v-card>
             </div>
 
             <div>
               <div class="font-weight-bold mb-2" style="font-size:1rem;">เหตุผลที่ไม่อนุมัติคำร้อง</div>
-              <v-textarea
-                v-model="reason"
-                outlined
-                placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติคำร้อง"
-                rows="3"
-                hide-details
-                class="rounded-lg"
-              />
+              <v-textarea v-model="reason" outlined placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติคำร้อง" rows="3"
+                hide-details class="rounded-lg" />
             </div>
           </v-card-text>
 
@@ -150,13 +162,8 @@
               ยกเลิก
             </v-btn>
 
-            <v-btn
-              class="px-12 ml-4 rounded-lg font-weight-bold"
-              height="44"
-              :color="reason.trim() ? 'primary' : 'grey lighten-1'"
-              :disabled="!reason.trim()"
-              @click="confirm"
-            >
+            <v-btn class="px-12 ml-4 rounded-lg font-weight-bold" height="44"
+              :color="reason.trim() ? 'primary' : 'grey lighten-1'" :disabled="!reason.trim()" @click="confirm">
               ยืนยัน
             </v-btn>
           </v-card-actions>
@@ -224,13 +231,45 @@ export default {
 </script>
 
 <style scoped>
-.info-row { display:flex; align-items:baseline; font-size:1rem; line-height:2; }
-.info-label { color:#757575; min-width:110px; flex-shrink:0; }
-.info-sep { margin-right:12px; color:#757575; }
-.info-value { font-weight:600; color:#000; word-break:break-word; }
+.info-row {
+  display: flex;
+  align-items: baseline;
+  font-size: 1rem;
+  line-height: 2;
+}
 
-.custom-scroll::-webkit-scrollbar { width: 8px; }
-.custom-scroll::-webkit-scrollbar-track { background:#f1f1f1; border-radius:4px; }
-.custom-scroll::-webkit-scrollbar-thumb { background:#c1c1c1; border-radius:4px; }
-.custom-scroll::-webkit-scrollbar-thumb:hover { background:#a8a8a8; }
+.info-label {
+  color: #757575;
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.info-sep {
+  margin-right: 12px;
+  color: #757575;
+}
+
+.info-value {
+  font-weight: 600;
+  color: #000;
+  word-break: break-word;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
 </style>
