@@ -130,6 +130,8 @@ export default {
 
     // ใช้เฉพาะ edit: object ที่หน้าเว็บ fetch มาแล้ว
     item: { type: Object, default: null },
+
+    empId: { type: [String, Number], default: null },
   },
   data() {
     return {
@@ -195,9 +197,6 @@ export default {
     headerText() {
       return this.isEdit ? "แก้ไขคำขอล่วงเวลา" : "เพิ่มคำขอล่วงเวลา";
     },
-    empId() {
-      return this.emp_id || null;
-    },
     saveButtonText() {
       return this.isEdit ? "บันทึกการแก้ไข" : "บันทึกคำขอ";
     },
@@ -247,9 +246,6 @@ export default {
       // ✅ แก้จุดที่ 1: ดึง Request ID มาด้วย
       this.request_id = item.request_id || null;
 
-      // ✅ แก้จุดที่ 2: ดึง Emp ID จากหลายๆ แหล่งที่เป็นไปได้
-      this.emp_id = item.emp_id;
-      
       // ✅ แก้จุดที่ 3: ดึง Type
       if (item.type) this.selectedType = item.type;
 
@@ -273,8 +269,10 @@ export default {
       this.checkOutDate = null;
       this.checkOutTime = null;
       this.description = "";
-      this.request_id = null; // reset request_id
-      // this.emp_id = null; // อาจจะไม่ reset emp_id ถ้าอยากให้จำค่าเดิมตอน create ต่อเนื่อง
+      this.request_id = null;
+      
+      // ✅ กำหนดค่า emp_id จาก Props (ถ้ามีส่งมา)
+      this.emp_id = this.empId; 
 
       this.pickerTarget = null;
       this.selectedDate = null;

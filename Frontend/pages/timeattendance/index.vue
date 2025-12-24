@@ -100,7 +100,7 @@
                 <div class="in-block">
                   <span class="small-label">เข้างาน</span>
                   <span class="colon">:</span>
-                  <span class="detail-value">{{ $formatDateTime(entry.checkIn)}}</span>
+                  <span class="detail-value">{{ $formatDateTime(entry.checkIn) }}</span>
                 </div>
 
                 <div class="out-block">
@@ -131,7 +131,7 @@
       </div>
     </div>
     <DialogOvertimeConfirm v-model="dialogConfirm" @confirm="submitRequest" />
-    <DialogOvertimeForm v-model="dialogOvertimeForm" :mode="overtimeMode" :item="selectedEntry"
+    <DialogOvertimeForm v-model="dialogOvertimeForm" :mode="overtimeMode" :item="selectedEntry" :emp-id="mockEmpId"
       @submit="handleSubmitOvertime" />
   </v-container>
 </template>
@@ -223,7 +223,7 @@ export default {
                   checkOut: req.end_time,   // เวลาออก (เช่น 17:30 น.)
                   status: req.ot_status,    // สถานะ (เช่น รออนุมัติ)
                   description: req.description || "-",        // รายละเอียด
-                  
+
 
                   // --- ส่วนที่ต้องใช้สำหรับ Logic (Checkbox, Edit, Status) ---
                   id: req.id,                 // ID ของรายการ OT
@@ -270,8 +270,6 @@ export default {
       this.dialogOvertimeForm = true;
     },
     editOvertimeRequest(entry) {
-      const raw = entry._raw || {};
-
       this.overtimeMode = "edit";
       this.selectedEntry = {
         ...entry,
