@@ -37,7 +37,7 @@ export default {
           border: "#FDE68A" // ขอบเหลืองจางๆ
         },
         2: { 
-          label: "รอหัวหน้า HR อนุมัติ", 
+          label: "รอ HR อนุมัติ", 
           bg: "#FFFBEB", // เหลืองอ่อนมาก
           text: "#B45309", // ส้มเข้ม
           border: "#FDE68A" // ขอบเหลืองจางๆ
@@ -56,8 +56,8 @@ export default {
         },
         5: { 
           label: "หัวหน้าไม่อนุมัติ", 
-          bg: "#FEF2F2", // แดง Rose อ่อน
-          text: "#B91C1C", // แดงเข้ม
+          bg: "#FF57FF", // แดงอ่อน
+          text: "#8B0000", // แดงเข้ม
           border: "#FECACA" 
         },
         6: { 
