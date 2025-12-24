@@ -124,25 +124,21 @@ export const createOt = async (req, res) => {
 export const updateOt = async (req, res) => {
   try {
     const { id } = req.params
+
+  
     const body = req.body
 
-   const exists = await OtModel.findById(id)
-if (!exists) return res.status(404).json({ success:false, message:'OT id not found' })
-
-if (body.ot_status !== undefined && Object.keys(body).length === 1) {
-  const ok = await OtModel.update(id, { ot_status: body.ot_status })
-  if (!ok) return res.status(500).json({ success:false, message:'Update failed' })
-  const updated = await OtModel.findById(id)
-  return res.json({ success:true, data: updated })
-}
-
+    const exists = await OtModel.findById(id)
+    if (!exists) {
+      return res.status(404).json({ success: false, message: 'OT id not found' })
+    }
 
     // Determine start and end times for calculation
     const startTime = body.start_time || exists.start_time
     const endTime = body.end_time || exists.end_time
 
     // Calculate total hours
-    const total = calculateOtHours(startTime, endTime)
+    const total = calculateHours(startTime, endTime)
 
     // Prepare data for DB
     const dbData = {
@@ -186,4 +182,3 @@ export const deleteOt = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error' })
   }
 }
-
