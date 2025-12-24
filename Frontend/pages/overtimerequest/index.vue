@@ -3,39 +3,6 @@
     <v-main class="pa-6">
       <v-breadcrumbs class="px-0 mb-4" :items="breadcrumbs" />
 
-<<<<<<< Updated upstream
-        <!-- ส่วนแสดงสถิติด้านบน -->
-        <v-row class="mb-6">
-          <v-col 
-            cols="12" 
-            sm="6"
-            md 
-            v-for="(stat, index) in statsComputed" 
-            :key="index"
-          >
-            <v-hover v-slot="{ hover }">
-              <v-card 
-                class="pa-6 rounded-xl d-flex align-center transition-swing"
-                :elevation="hover ? 6 : 0"
-                :style="`border: 1px solid ${isStatActive(stat.label) ? stat.borderColor : '#E0E0E0'}; height: 100%; background: white; transform: ${isStatActive(stat.label) ? 'scale(1.02)' : 'scale(1)'}`"
-                @click="onStatClick(stat.label)"
-                style="cursor: pointer; transition: all 0.2s;"
-              >
-                <div 
-                  class="rounded-lg d-flex justify-center align-center mr-6 elevation-0"
-                  :style="`background-color: ${stat.bg}; width: 80px; height: 80px; min-width: 80px; border: 1px solid ${stat.borderColor}`"
-                >
-                  <v-icon size="40" :color="stat.iconColor">{{ stat.icon }}</v-icon>
-                </div>
-                
-                <div class="flex-grow-1">
-                  <div class="text-h4 font-weight-bold mb-1" style="color: #2D3748; line-height: 1.2;">
-                    {{ stat.count }}
-                  </div>
-                  <div class="subtitle-1 font-weight-medium grey--text text--darken-1">
-                    {{ stat.label }}
-                  </div>
-=======
       <!-- ส่วนแสดงสถิติด้านบน -->
       <v-row class="mb-6">
         <v-col cols="12" sm="6" md v-for="(stat, index) in statsComputed" :key="index">
@@ -54,7 +21,6 @@
                 </div>
                 <div class="text-caption font-weight-medium grey--text text--darken-1 mt-1">
                   {{ stat.label }}
->>>>>>> Stashed changes
                 </div>
               </div>
             </v-card>
@@ -775,15 +741,6 @@ export default {
       if (!this.cancellationReason.trim()) return;
 
       try {
-<<<<<<< Updated upstream
-        // ส่ง Request ไปยัง API จริงๆ สำหรับทุกรายการใน itemsToCancel
-        const promises = this.itemsToCancel.map(item => {
-            return axios.put(`${API_URL}/ot/${item.id}`, {
-                ot_status: 4, // 4 = Cancelled
-                // ถ้าต้องการบันทึกเหตุผลใน description หรือ field อื่น ให้เพิ่มตรงนี้
-                // description: `${this.cancellationReason} (${item.description || ''})`
-            });
-=======
         await new Promise(resolve => setTimeout(resolve, 800)); // จำลองความล่าช้าของ API
 
         const cancelledRequestIds = new Set(this.itemsToCancel.map(i => i.request_no));
@@ -798,13 +755,7 @@ export default {
               r.children.forEach(c => c.ot_status = 4);
             }
           }
->>>>>>> Stashed changes
         });
-
-        await Promise.all(promises);
-
-        // โหลดข้อมูลใหม่เพื่อให้แสดงผลถูกต้องตามจริงจาก DB
-        await this.fetchRecords();
 
         this.cancelDialog = false;
         this.selectedItems = []; // ล้างการเลือก
@@ -812,7 +763,7 @@ export default {
 
       } catch (err) {
         console.error("Cancel error:", err);
-        alert("การยกเลิกล้มเหลว: " + (err.response?.data?.message || err.message));
+        alert("ยกเลิกล้มเหลว");
       }
     },
   },
