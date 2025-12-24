@@ -1,26 +1,11 @@
 // src/controllers/ot.controller.js
 import OtModel from '../models/ot.model.js'
+import OtDetailModel from '../models/otDetail.model.js';
+import OtConfigModel from '../models/otConfig.model.js';
+import HolidayModel from '../models/holiday.model.js';
+import dayjs from 'dayjs';
 
-const generateNextDocNo = (lastDocNo) => {
-    // 1. ถ้ายังไม่มีเอกสารใดๆ เลยในระบบ ให้เริ่มที่ OT-1
-    if (!lastDocNo) return 'OT-1';
-    
-    // 2. แยกส่วน 'OT' กับ 'ตัวเลข' (สมมติ format คือ OT-123)
-    const parts = lastDocNo.split('-'); 
-    // parts[0] = 'OT', parts[1] = '1'
-
-    if (parts.length < 2) return 'OT-1'; // กันเหนียว
-    
-    // 3. แปลงเป็นตัวเลขแล้วบวก 1
-    const numberPart = parseInt(parts[1], 10);
-    
-    if (isNaN(numberPart)) return 'OT-1'; // ถ้าแปลงไม่ได้ ให้เริ่มใหม่
-    
-    const nextNumber = numberPart + 1;
-    
-    // 4. ส่งคืนค่ารูปแบบ OT-X
-    return `OT-${nextNumber}`;
-};
+const formatDateForMySQL = (dateObj) => dayjs(dateObj).format('YYYY-MM-DD HH:mm:ss');
 
 export const getAllEmployee = async (req, res) => {
   try {
@@ -64,104 +49,75 @@ export const getOtById = async (req, res) => {
   }
 }
 
-const calculateOtHours = (start, end) => {
-  const startTime = new Date(start);
-  const endTime = new Date(end);
-  const diffMs = endTime - startTime;
-  
-  // 1. หาชั่วโมงรวมทั้งหมดที่เขาอยู่ในบริษัท (Total Presence)
-  let totalPresence = diffMs / (1000 * 60 * 60);
-
-  // 2. หักเวลาทำงานปกติออก (9 ชม. รวมพัก) เพื่อให้เหลือแต่ "ชั่วโมงโอทีดิบ"
-  // ถ้าทำไม่ถึง 9 ชม. แสดงว่าไม่มีโอที ให้เป็น 0
-  let otHours = totalPresence >= 9 ? totalPresence - 9 : 0;
-
-  // 3. เงื่อนไขหักพักโอที: ถ้าโอทีดิบ (เศษที่เกินมา) ครบหรือเกิน 2 ชม. ให้หักออกอีก 30 นาที (0.5 ชม.)
-  if (otHours >= 2) {
-    otHours = otHours - 0.5;
-  }
-
-  // ปัดเศษทศนิยม 2 ตำแหน่ง
-  return Math.round(otHours * 100) / 100;
-}
-
-const formatDateForMySQL = (isoDate) => {
-  if (!isoDate) return null
-  const d = new Date(isoDate)
-  // Format to YYYY-MM-DD HH:MM:SS
-  // Note: toISOString() returns UTC. If we want to preserve the input time as is (assuming it's already correct), 
-  // we might need to be careful. But usually stripping T and Z from ISO string is enough if it's UTC.
-  // However, to be safe and simple:
-  return d.toISOString().slice(0, 19).replace('T', ' ')
-}
-
 export const createOt = async (req, res) => {
   try {
-    const body = req.body
+    const body = req.body;
+    delete body.id;
 
-    // Validation ...
     if (!body.start_time || !body.end_time || !body.emp_id) {
-      return res.status(400).json({ success: false, message: 'Require data' })
-    }
-    
-    const total = calculateOtHours(body.start_time, body.end_time)
-
-    // ----------------------------------------------------
-    // START: Logic Grouping & Running Number
-    // ----------------------------------------------------
-    let docNo;
-    
-    // 1. ลองหาใบเดิมที่ยัง Active ของพนักงานคนนี้ก่อน
-    const activeRequest = await OtModel.findActiveRequest(body.emp_id);
-    
-    if (activeRequest) {
-        // ✅ กรณี A: มีใบเดิมที่ยังไม่จบ -> ใช้เลขเดิม (เช่น OT-1)
-        docNo = activeRequest.doc_no;
-        console.log(`[OT] Found active request, Using: ${docNo}`);
-    } else {
-        // ✅ กรณี B: ไม่มีใบเดิม -> สร้างใบใหม่ -> รันเลขต่อจากล่าสุดในระบบ
-        
-        // ดึงเลขล่าสุดจาก Database (ดูว่าล่าสุดเป็น OT อะไร เช่น OT-5)
-        const lastDoc = await OtModel.getLastRequestDocNo();
-        
-        // Gen เลขใหม่ (จะได้ OT-6)
-        docNo = generateNextDocNo(lastDoc);
-        
-        const typeId = body.type || 1; // Default type=1 (NORMAL) ถ้า frontend ไม่ส่งมา
-
-        // สร้าง Header Request ใหม่
-        await OtModel.createRequest({
-            doc_no: docNo,
-            title: 'ขออนุมัติทำโอที',
-            type: typeId,
-            sts: '1', // Active
-            created_by: body.emp_id
-        });
-        console.log(`[OT] Created NEW request: ${docNo}`);
-    }
-    // ----------------------------------------------------
-
-    const dbData = {
-      ...body,
-      request_id: docNo, // ใส่เลขที่ได้มา (OT-1 หรือ OT-2...)
-      start_time: formatDateForMySQL(body.start_time),
-      end_time: formatDateForMySQL(body.end_time),
-      total,
-      created_by: body.emp_id
+      return res.status(400).json({ success: false, message: 'Require start_time, end_time, emp_id' });
     }
 
-    const created = await OtModel.create(dbData)
+    const typeId = body.type || 1;
+    const allConfigs = await OtConfigModel.findAll();
+
+    // ---------------------------------------------------------
+    // 2. ดึงข้อมูลวันหยุด และแปลงเป็น Array ของ 'YYYY-MM-DD'
+    // ---------------------------------------------------------
+    const rawHolidays = await HolidayModel.findAll(); 
+    const holidayList = rawHolidays.map(h => dayjs(h.day_date).format('YYYY-MM-DD'));
     
-    res.status(201).json({ 
-        success: true, 
-        data: created,
-        doc_no: docNo, // ส่งเลขเอกสารกลับไปให้ Frontend ดูด้วย
-        message: activeRequest ? 'Added to existing request' : 'Created new request'
-    })
+    // 3. ส่ง holidayList เข้าไปในฟังก์ชันคำนวณ
+    let calculationResult;
+    try {
+        // เพิ่ม Parameter ตัวสุดท้ายเป็น holidayList
+        calculationResult = OtModel.calculateOtDetails(
+            body.start_time, 
+            body.end_time, 
+            typeId, 
+            allConfigs, 
+            holidayList // <--- ส่งไปตรงนี้
+        );
+    } catch (calcError) {
+        return res.status(400).json({ success: false, message: calcError.message });
+    }
+
+    const { total, details } = calculationResult;
+
+    // ... (Code ส่วนบันทึกข้อมูล request, createOt, detail เหมือนเดิม) ...
+    
+    const lastDoc = await OtModel.getLastRequestDocNo();
+    const docNo = OtModel.generateNextDocNo(lastDoc);
+    
+    const requestPkId = await OtModel.createRequest({
+        doc_no: docNo, title: 'ขออนุมัติทำโอที', type: typeId, sts: '1', created_by: body.emp_id
+    });
+
+    const otHeaderData = {
+        ...body, request_id: requestPkId,
+        start_time: dayjs(body.start_time).format('YYYY-MM-DD HH:mm:ss'),
+        end_time: dayjs(body.end_time).format('YYYY-MM-DD HH:mm:ss'),
+        total: total, created_by: body.emp_id
+    };
+    
+    const createdOt = await OtModel.create(otHeaderData);
+    const otId = createdOt.id;
+
+    if (details.length > 0) {
+        await OtDetailModel.createMany(otId, details);
+    }
+
+    res.status(201).json({
+        success: true,
+        data: { ...createdOt, total: total },
+        details: details,
+        doc_no: docNo,
+        message: 'Created OT request successfully'
+    });
 
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ success: false, message: 'Internal server error' })
+    console.error("Error creating OT:", err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }
 

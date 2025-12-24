@@ -6,10 +6,11 @@ import db from '../config/db.js';
 // 4. พนักงานทำงานตามชั่วโมง
 
 const OtConfigModel = {
-    async findAll() {
-       const sql = 'SELECT * FROM ot_config'
-       const [rows] = await db.query(sql)
-       return rows
+async findAll() {
+       // ดึงทุก column ตามภาพ Schema ใหม่
+       const sql = 'SELECT * FROM ot_config WHERE is_active = 1';
+       const [rows] = await db.query(sql);
+       return rows;
     },
 
 
