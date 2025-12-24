@@ -410,15 +410,12 @@
 
 <script>
 import axios from "axios";
-import Status from "@/components/global/Status.vue";
-
+import Status from '@/components/global/Status.vue';
 const API_URL = process.env.VUE_APP_API_URL || "http://localhost:5500/api";
 
 export default {
   name: "AttendancePage",
-  components: {
-    Status,
-  },
+
   data() {
     return {
       // --- UI States (สถานะของ UI) ---
@@ -588,11 +585,11 @@ export default {
 
 
     // ฟังก์ชันดึงข้อมูลจาก API
-    async fetchRecords() {
+async fetchRecords() {
       this.loading = true;
       this.error = null;
       try {
-        // 1. ยิง API ดึงข้อมูลทั้งหมด (ส่ง emp_id ไปด้วย ถ้ามี)
+        // 1. เรียก API (ส่ง emp_id ไปกรองด้วยถ้ามี Mock)
         const response = await axios.get(`${API_URL}/ot/request`, {
            params: { emp_id: this.mockEmpId }
         });
@@ -600,13 +597,10 @@ export default {
         if (response.data && response.data.success) {
           const rawData = response.data.data;
           
-          // ---------------------------------------------------------
           // 2. จัดกลุ่มข้อมูล (Grouping) ตาม request_id
-          // ---------------------------------------------------------
           const groups = {};
           
           rawData.forEach((item) => {
-            // ใช้ request_id เป็น key (ถ้าไม่มีใช้ id แทน)
             const key = item.request_id || item.id;
             
             if (!groups[key]) {
@@ -617,38 +611,29 @@ export default {
             }
             
             groups[key].items.push(item);
-            // บวกชั่วโมงรวม (แปลงเป็น float ก่อนบวก)
             groups[key].totalHours += parseFloat(item.total || 0);
           });
 
-          // ---------------------------------------------------------
-          // 3. แปลง Object Group ให้กลายเป็น Array เพื่อโชว์ในตาราง
-          // ---------------------------------------------------------
-          // ตรงนี้คือส่วนที่คุณถามมา (ผมแก้ตัวแปร r เป็น g ให้เข้าใจง่ายขึ้น)
+          // 3. แปลงเป็น Array เพื่อแสดงผล
           this.attendanceRecords = Object.values(groups).map((g) => {
-              const first = g.items[0]; // ใช้ข้อมูลของตัวแรกเป็น Header
+              const first = g.items[0]; 
               
-              // จัดการเรื่องทศนิยมของชั่วโมงรวม
               const totalH = g.totalHours;
               const formattedHours = Number.isInteger(totalH) ? totalH : totalH.toFixed(2);
 
               return {
                   id: first.id, 
                   request_no: first.request_id || "-", 
-                  title: first.description || "ขออนุมัติ OT", // ถ้าไม่มี description ให้ใส่ default
+                  title: first.description || "ขออนุมัติ OT",
                   
-                  // ข้อมูลวันที่/เวลา (เอามาจากรายการแรก)
-                  startDate: this.formatISODate(first.start_time),
-                  startTime: this.formatISOTime(first.start_time),
-                  endDate: this.formatISODate(first.end_time),
-                  endTime: this.formatISOTime(first.end_time),
+                  // ✅ เปลี่ยนมาใช้ Plugin ที่นี่ครับ (ใส่ $ นำหน้า)
+                  startDate: this.$formatDate(first.start_time), // เช่น 24/12/2568
+                  startTime: this.$formatTime(first.start_time), // เช่น 18:30 น.
+                  endDate:   this.$formatDate(first.end_time),
+                  endTime:   this.$formatTime(first.end_time),
                   
-                  hours: formattedHours, // ผลรวมชั่วโมง
-                  
-                  // ✅ ส่งค่านี้ไปให้ Component <Status /> (เช่น 1, 2)
-                  ot_status: first.ot_status, 
-                  
-                  // เก็บลูกๆ ไว้เผื่อกดดูรายละเอียด (View Detail)
+                  hours: formattedHours,
+                  ot_status: first.ot_status, // ส่งเลขสถานะไปให้ <Status />
                   children: g.items 
               };
           });
@@ -659,26 +644,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-
-    // =========================================
-    // FORMATTERS
-    // =========================================
-    formatISODate(isoString) {
-      if (!isoString) return "";
-      const date = new Date(isoString);
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
-    },
-
-    formatISOTime(isoString) {
-      if (!isoString) return "";
-      const date = new Date(isoString);
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-      return `${hours}.${minutes} น.`;
     },
 
     // =========================================
@@ -721,9 +686,9 @@ export default {
       // Need to format them to match the table expectations
       if (item.children && item.children.length > 0) {
           this.relatedItems = item.children.map(c => ({
-              startDate: this.formatISODate(c.start_time),
-              startTime: this.formatISOTime(c.start_time),
-              endTime: this.formatISOTime(c.end_time),
+              startDate: this.$formatDate(c.start_time),
+              startTime: this.$formatTime(c.start_time),
+              endTime: this.$formatTime(c.end_time),
               hours: c.total
           }));
       } else {
@@ -756,9 +721,9 @@ export default {
               allChildren = allChildren.concat(group.children.map(c => ({
                    id: c.id,
                    request_no: c.request_id,
-                   startDate: this.formatISODate(c.start_time),
-                   startTime: this.formatISOTime(c.start_time),
-                   endTime: this.formatISOTime(c.end_time)
+                   startDate: this.$formatDate(c.start_time),
+                   startTime: this.$formatTime(c.start_time),
+                   endTime: this.$formatTime(c.end_time)
               })));
           }
       });
@@ -781,9 +746,9 @@ export default {
                this.itemsToCancel = this.selectedItem.children.map(c => ({
                    id: c.id,
                    request_no: c.request_id,
-                   startDate: this.formatISODate(c.start_time),
-                   startTime: this.formatISOTime(c.start_time),
-                   endTime: this.formatISOTime(c.end_time)
+                   startDate: this.$formatDate(c.start_time),
+                   startTime: this.$formatTime(c.start_time),
+                   endTime: this.$formatTime(c.end_time)
                }));
           } else {
                this.itemsToCancel = [this.selectedItem];

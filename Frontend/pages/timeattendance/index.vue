@@ -85,14 +85,14 @@
                 <div class="date-block">
                   <span class="small-label">วันที่</span>
                   <span class="colon">:</span>
-                  <span class="date-value">{{ entry.date }}</span>
+                  <span class="date-value">{{ $formatDate(entry.date) }}</span>
                 </div>
 
                 <div class="status-block">
                   <span class="small-label">สถานะ</span>
                   <span class="colon">:</span>
-                  
-                  <Status :value="entry._raw.ot_status" />
+
+                  <Status :value="entry.status" />
                 </div>
               </div>
 
@@ -100,13 +100,13 @@
                 <div class="in-block">
                   <span class="small-label">เข้างาน</span>
                   <span class="colon">:</span>
-                  <span class="detail-value">{{ entry.checkIn }}</span>
+                  <span class="detail-value">{{ $formatDateTime(entry.checkIn)}}</span>
                 </div>
 
                 <div class="out-block">
                   <span class="small-label">ออกงาน</span>
                   <span class="colon">:</span>
-                  <span class="detail-value">{{ entry.checkOut }}</span>
+                  <span class="detail-value">{{ $formatDateTime(entry.checkOut) }}</span>
                 </div>
               </div>
               <div v-if="entry.selected">
@@ -196,55 +196,51 @@ export default {
   methods: {
 
     async fetchTimeEntries() {
+      this.loading = true;
       try {
-        const resp = await api.get("/api/ot/request", {
-            params: {
-                emp_id: this.mockEmpId
-            }
+        // 1. ยิง API /api/ot แบบ Production
+        const response = await api.get("/api/ot", {
+          params: {
+            // ส่งค่า Mock ID ไป (ถ้า user ไม่กรอกจะเป็น null/empty ก็ไม่เป็นไร)
+            emp_id: this.mockEmpId
+          }
         });
 
-        // สมมติ resp.data คือก้อน JSON ที่คุณส่งมา
-        if (resp.data && resp.data.data) {
-          const items = resp.data.data;
+        if (response.data && response.data.success) {
+          const employees = response.data.data;
+          const flattenedEntries = [];
 
-          this.allTimeEntries = items.map((it) => {
-            return {
-              selected: false,
-              request_id: it.request_id || "-",
-              date: this.formatDateShort(it.start_time),
-              status: it.ot_status,
-              checkIn: this.formatTimeOnly(it.start_time),
-              checkOut: this.formatTimeOnly(it.end_time),
-              total: it.total || "0",
-              description: it.description || "-",
-              _raw: it, // เก็บข้อมูลดิบไว้ใช้ตอน Edit หรือส่ง API
-            };
+          // 2. วนลูป 2 ชั้นเพื่อแตกข้อมูล (Employee -> Request -> Row)
+          employees.forEach(emp => {
+            // เช็คว่าพนักงานคนนี้มีรายการ OT ไหม
+            if (Array.isArray(emp.ot_requests) && emp.ot_requests.length > 0) {
+
+              emp.ot_requests.forEach(req => {
+                flattenedEntries.push({
+                  // --- ส่วนข้อมูลหลักที่ใช้แสดงผล ---
+                  date: req.created_at,     // วันที่ (เช่น 24/12/2568)
+                  checkIn: req.start_time,  // เวลาเข้า (เช่น 08:30 น.)
+                  checkOut: req.end_time,   // เวลาออก (เช่น 17:30 น.)
+                  status: req.ot_status,    // สถานะ (เช่น รออนุมัติ)
+                  description: req.description || "-",        // รายละเอียด
+                  
+                  // --- ส่วนที่ต้องใช้สำหรับ Logic (Checkbox, Edit, Status) ---
+                  id: req.id,
+                  request_id: req.request_id,
+                  selected: false,      // จำเป็นสำหรับ Checkbox เลือกรายการ
+                });
+              });
+            }
           });
 
-          this.timeEntries = [...this.allTimeEntries];
-          this.onSearch(); // กรองตามเดือน/ปี ที่เลือกไว้ตอนเริ่มต้น
+          // 3. อัปเดตเข้าตัวแปรตาราง
+          this.timeEntries = flattenedEntries;
         }
       } catch (err) {
         console.error("Error fetching data:", err);
+      } finally {
+        this.loading = false;
       }
-    },
-    formatTimeOnly(iso) {
-      if (!iso) return "-";
-      const d = new Date(iso);
-      return d.toLocaleTimeString("th-TH", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }) + " น.";
-    },
-
-    formatDateShort(iso) {
-      if (!iso) return "-";
-      return new Date(iso).toLocaleDateString("th-TH", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
     },
 
     // ปรับปรุง onSearch ให้ค้นหาจากข้อมูลที่ map มาแล้ว
