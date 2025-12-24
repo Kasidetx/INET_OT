@@ -1,7 +1,6 @@
 <template>
-  <v-container fluid class="pa-6">
-    <v-row no-gutters>
-      <v-col cols="12" class="main-bg pa-6">
+  <v-app style="background-color: white; font-family: 'Sarabun', sans-serif;">
+    <v-main class="pa-6">
         <v-breadcrumbs class="px-0 mb-4" :items="breadcrumbs" />
 
         <!-- ส่วนแสดงสถิติด้านบน -->
@@ -41,10 +40,9 @@
           </v-col>
         </v-row>
 
-        <!-- ส่วนค้นหาและกรองข้อมูล -->
-        <v-card class="pa-4 mb-4" outlined elevation="0">
+        <v-card class="pa-4 mb-4" flat color="transparent">
           <v-row align="center" no-gutters>
-            <v-col cols="12" sm="9">
+            <v-col cols="12" sm>
               <v-text-field
                 v-model="q"
                 prepend-inner-icon="mdi-magnify"
@@ -56,7 +54,7 @@
               />
             </v-col>
 
-            <v-col cols="6" sm="2" class="px-2">
+            <v-col cols="auto" class="px-2">
               <v-select
                 v-model="filterYear"
                 :items="years"
@@ -65,10 +63,11 @@
                 outlined
                 hide-details
                 clearable
+                style="width: 120px;"
               />
             </v-col>
 
-            <v-col cols="12" sm="1" class="text-right pl-2">
+            <v-col cols="auto">
               <v-btn color="primary" @click="onSearch" class="mt-1"
                 >ค้นหา</v-btn
               >
@@ -77,7 +76,7 @@
         </v-card>
 
         <!-- ตารางแสดงรายการ -->
-        <v-card outlined elevation="0">
+        <v-card outlined elevation="0" class="white">
           <v-card-title class="pb-4 blue--text d-flex justify-space-between align-center">
             <span>รายการเอกสาร {{ filteredItems.length }} รายการ</span>
             <div v-if="selectedItems.length > 0">
@@ -198,8 +197,7 @@
             </div>
           </v-card-actions>
         </v-card>
-      </v-col>
-    </v-row>
+
 
     <!-- กล่องโต้ตอบรายละเอียด (Dialog) -->
     <v-dialog v-model="viewDialog" max-width="900px">
@@ -404,11 +402,12 @@
         </v-card-text>
       </v-card>
     </v-dialog>
-  </v-container>
+    </v-main>
+  </v-app>
 </template>
 
 <script>
-import api from "@/service/api";
+import axios from "axios";
 import Status from "@/components/global/Status.vue";
 
 const API_URL = process.env.VUE_APP_API_URL || "http://localhost:5500/api";
@@ -426,9 +425,9 @@ export default {
       error: null,    // เก็บข้อผิดพลาดถ้ามี
       breadcrumbs: [  // ตัวนำทาง breadcrumbs
 
-        { text: "หน้าหลัก", disabled: false },
+       /* { text: "หน้าหลัก", disabled: false },
         { text: "ลงเวลา", disabled: false },
-        { text: "ลงเวลางาน", disabled: true },
+        { text: "ลงเวลางาน", disabled: true }, */
       ],
 
       // --- Filters & Search (ตัวกรองและค้นหา) ---
@@ -584,7 +583,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await api.get(`api/ot/request`);
+        const response = await axios.get(`${API_URL}/ot/request`);
         if (response.data && response.data.success) {
           const rawData = response.data.data;
           
@@ -821,14 +820,15 @@ export default {
 </script>
 
 <style scoped>
- 
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+* {
+  font-family: 'Sarabun', sans-serif !important;
+}
+
   /*โครงสร้างหลักและการ์ดสถิติ (Stat Card)*/
 
-.main-bg {
 
-    background-color: #f5f7fb;
-    min-height: 100vh;
-}
 
 /* การแบ่งหน้า (Pagination)*/
 .pagination-controls {
@@ -887,4 +887,4 @@ export default {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #9e9e9e;
 }
-</style>
+</style> 
