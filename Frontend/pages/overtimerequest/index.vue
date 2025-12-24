@@ -4,7 +4,7 @@
       <v-col cols="12" class="main-bg pa-6">
         <v-breadcrumbs class="px-0 mb-4" :items="breadcrumbs" />
 
-        <!-- TOP STAT BOXES -->
+        <!-- ส่วนแสดงสถิติด้านบน -->
         <v-row class="mb-6">
           <v-col 
             cols="12" 
@@ -41,7 +41,7 @@
           </v-col>
         </v-row>
 
-        <!-- SEARCH / FILTER -->
+        <!-- ส่วนค้นหาและกรองข้อมูล -->
         <v-card class="pa-4 mb-4" outlined elevation="0">
           <v-row align="center" no-gutters>
             <v-col cols="12" sm="9">
@@ -76,7 +76,7 @@
           </v-row>
         </v-card>
 
-        <!-- TABLE LIST -->
+        <!-- ตารางแสดงรายการ -->
         <v-card outlined elevation="0">
           <v-card-title class="pb-4 blue--text d-flex justify-space-between align-center">
             <span>รายการเอกสาร {{ filteredItems.length }} รายการ</span>
@@ -95,12 +95,12 @@
           </v-card-title>
           <v-progress-linear v-if="loading" indeterminate></v-progress-linear>
 
-          <!-- ERROR STATE -->
+          <!-- ส่วนแสดงข้อผิดพลาด -->
           <v-alert v-if="error" type="error" class="ma-4">
             ไม่สามารถโหลดข้อมูล: {{ error.message }}
           </v-alert>
 
-          <!-- TABLE -->
+          <!-- ตารางข้อมูล -->
           <v-simple-table v-if="!loading && paginatedItems.length > 0">
             <template #default>
               <thead>
@@ -149,7 +149,7 @@
                   </td>
                   <td class="text-center">{{ item.hours }}</td>
                   <td class="text-center">
-                    <Status :value="item.ot_status" />
+                    <Status :value="item.statusCode" />
                   </td>
                   <td class="text-center">
                     <v-btn icon small @click="onView(item)" class="mr-1">
@@ -161,8 +161,7 @@
             </template>
           </v-simple-table>
 
-          <!-- NO DATA STATE -->
-          <!-- NO DATA STATE -->
+          <!-- ส่วนแสดงเมื่อไม่มีข้อมูล -->
           <div v-if="!loading && paginatedItems.length === 0" class="text-center pa-8">
             <v-img
               :src="require('@/assets/img/Delete.png')" 
@@ -174,7 +173,7 @@
             <div class="blue--text subtitle-1">ไม่มีรายการเอกสารคำขอเบิกค่าล่วงเวลา</div>
           </div>
 
-          <!-- PAGINATION -->
+          <!-- ส่วนจัดการหน้า (Pagination) -->
           <v-card-actions v-if="filteredItems.length > 0" class="d-flex align-center justify-space-between pagination-controls pa-3">
             <span class="black--text">จำนวนแถว</span>
             <div class="d-flex align-center">
@@ -202,10 +201,10 @@
       </v-col>
     </v-row>
 
-    <!-- VIEW DETAIL DIALOG -->
+    <!-- กล่องโต้ตอบรายละเอียด (Dialog) -->
     <v-dialog v-model="viewDialog" max-width="900px">
       <v-card v-if="selectedItem" class="rounded-lg">
-        <!-- Header -->
+        <!-- ส่วนหัว -->
         <v-card-title class="blue lighten-5 d-flex justify-center py-4 relative" style="position: relative;">
           <span class="headline font-weight-bold blue--text text--darken-3">รายละเอียดเบิกค่าล่วงเวลา</span>
           <v-btn icon absolute right top @click="viewDialog = false" class="mt-3 mr-3">
@@ -216,7 +215,7 @@
         <v-card-text class="pa-6">
           <div class="subtitle-1 font-weight-bold mb-6 black--text">รายละเอียดเอกสาร</div>
 
-          <!-- Info Section -->
+          <!-- ส่วนข้อมูลทั่วไป -->
           <v-row class="mb-2">
             <v-col cols="12" md="6" class="py-1">
               <v-row no-gutters>
@@ -243,7 +242,7 @@
             </v-col>
           </v-row>
 
-          <!-- Table Section -->
+          <!-- ส่วนตารางรายละเอียด -->
           <v-card outlined elevation="0" class="mt-4 rounded-lg overflow-hidden">
             <v-simple-table>
               <template v-slot:default>
@@ -271,7 +270,7 @@
             </v-simple-table>
           </v-card>
 
-          <!-- Footer Button -->
+          <!-- ปุ่มด้านล่าง -->
           <div class="d-flex justify-center mt-8">
             <v-btn
               color="#0d47a1"
@@ -291,7 +290,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- CANCEL CONFIRMATION DIALOG -->
+    <!-- กล่องยืนยันการยกเลิก -->
     <v-dialog v-model="cancelDialog" max-width="600px">
       <v-card class="rounded-lg">
         <v-card-title class="blue lighten-5 py-3 relative" style="position: relative;">
@@ -309,7 +308,7 @@
           </div>
           <div class="black--text mb-6">วันนี้คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคำร้องขอ</div>
 
-          <!-- Item Details Box Container -->
+          <!-- กล่องรายละเอียดรายการที่จะยกเลิก -->
           <div style="max-height: 300px; overflow-y: auto;" class="mb-4 pr-2 custom-scrollbar">
             <v-card 
               v-for="(item, index) in itemsToCancel" 
@@ -381,7 +380,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- SUCCESS DIALOG -->
+    <!-- กล่องแสดงผลสำเร็จ -->
     <v-dialog v-model="successDialog" max-width="500px">
       <v-card class="rounded-lg text-center pb-6">
         <v-card-title class="blue lighten-5 py-3 relative justify-center mb-6" style="position: relative;">
@@ -410,11 +409,15 @@
 
 <script>
 import axios from "axios";
-import Status from '@/components/global/Status.vue';
+import Status from "@/components/global/Status.vue";
+
 const API_URL = process.env.VUE_APP_API_URL || "http://localhost:5500/api";
 
 export default {
   name: "AttendancePage",
+  components: {
+    Status,
+  },
 
   data() {
     return {
@@ -471,11 +474,11 @@ export default {
       successDialog: false,
       
       selectedItem: null,
-      relatedItems: [],    // For viewing details of a request group
-      itemsToCancel: [],   // For handling cancellation (multiple items)
+      relatedItems: [],    // สำหรับดูรายละเอียดของกลุ่มคำร้อง
+      itemsToCancel: [],   // สำหรับจัดการการยกเลิก (หลายรายการ)
       cancellationReason: "",
       
-      // Removed unused edit-related data
+      // ลบข้อมูลที่เกี่ยวข้องกับการแก้ไขที่ไม่ได้ใช้ออก
     };
   },
 
@@ -497,7 +500,7 @@ export default {
         if (r.status && counts.hasOwnProperty(r.status)) counts[r.status]++;
       });
 
-      // Updated colors mapping for new design
+      // อัปเดตการจับคู่สีสำหรับการออกแบบใหม่
       const theme = {
         blue:   { bg: '#E3F2FD', border: '#90CAF9', icon: '#1976D2' },
         orange: { bg: '#FFF3E0', border: '#FFCC80', icon: '#EF6C00' },
@@ -523,7 +526,7 @@ export default {
     filteredItems() {
       let items = this.attendanceRecords.slice();
       
-      // Filter by Search Query
+      // กรองตามคำค้นหา
       if (this.q) {
         const q = this.q.toLowerCase();
         items = items.filter(
@@ -533,7 +536,7 @@ export default {
         );
       }
       
-      // Filter by Dropdowns
+      // กรองตามตัวเลือก Dropdown
 
       if (this.filterYear) {
         items = items.filter(
@@ -541,7 +544,7 @@ export default {
         );
       }
       
-      // Filter by Status Card
+      // กรองตามการ์ดสถานะ
       if (this.filterStatus) {
         items = items.filter((it) => it.status === this.filterStatus);
       }
@@ -573,82 +576,108 @@ export default {
   },
 
   methods: {
-    // =========================================
-    // DATA GENERATION & FETCHING
-    // =========================================
-
-
     async fetchYears() {
-      // Mock handled in fetchRecords
     },
 
-
-
     // ฟังก์ชันดึงข้อมูลจาก API
-async fetchRecords() {
+    async fetchRecords() {
       this.loading = true;
       this.error = null;
       try {
-        // 1. เรียก API (ส่ง emp_id ไปกรองด้วยถ้ามี Mock)
-        const response = await axios.get(`${API_URL}/ot/request`, {
-           params: { emp_id: this.mockEmpId }
-        });
-
+        const response = await axios.get(`${API_URL}/ot/request`);
         if (response.data && response.data.success) {
           const rawData = response.data.data;
           
-          // 2. จัดกลุ่มข้อมูล (Grouping) ตาม request_id
+          // จัดกลุ่มตาม request_id
           const groups = {};
-          
-          rawData.forEach((item) => {
-            const key = item.request_id || item.id;
-            
-            if (!groups[key]) {
-              groups[key] = {
-                items: [],
-                totalHours: 0
-              };
-            }
-            
-            groups[key].items.push(item);
-            groups[key].totalHours += parseFloat(item.total || 0);
+          rawData.forEach(item => {
+              // ตรวจสอบให้แน่ใจว่ามี key ถ้าไม่มี request_id ให้ใช้ id แทนเพื่อความไม่ซ้ำกัน
+              const key = item.request_id || `REQ-${item.id}`; 
+              if (!groups[key]) {
+                  groups[key] = {
+                      items: [],
+                      totalHours: 0
+                  };
+              }
+              const hours = parseFloat(item.total) || 0;
+              groups[key].items.push(item);
+              groups[key].totalHours += hours;
           });
 
-          // 3. แปลงเป็น Array เพื่อแสดงผล
-          this.attendanceRecords = Object.values(groups).map((g) => {
-              const first = g.items[0]; 
-              
+          // แปลงกลุ่มข้อมูลเป็น array สำหรับแสดงผล
+          const records = Object.values(groups).map(g => {
+              const first = g.items[0];
+              // แปลงสถานะจากฐานข้อมูลเป็นข้อความ
+              // 1: รออนุมัติ, 2: อนุมัติแล้ว, 3: ไม่อนุมัติ, 4: ยกเลิก
+              const statusMap = { 1: 'รออนุมัติ', 2: 'อนุมัติแล้ว', 3: 'ไม่อนุมัติ', 4: 'ยกเลิก' };
+              const statusText = statusMap[first.ot_status] || 'รออนุมัติ'; 
+
+              // จัดรูปแบบชั่วโมงรวม: ตัดทศนิยมถ้าเป็นจำนวนเต็ม หรือเก็บทศนิยม 2 ตำแหน่ง
               const totalH = g.totalHours;
               const formattedHours = Number.isInteger(totalH) ? totalH : totalH.toFixed(2);
 
               return {
-                  id: first.id, 
+                  id: first.id, // ใช้ ID ที่ไม่ซ้ำกันสำหรับการเลือก
                   request_no: first.request_id || "-", 
-                  title: first.description || "ขออนุมัติ OT",
-                  
-                  // ✅ เปลี่ยนมาใช้ Plugin ที่นี่ครับ (ใส่ $ นำหน้า)
-                  startDate: this.$formatDate(first.start_time), // เช่น 24/12/2568
-                  startTime: this.$formatTime(first.start_time), // เช่น 18:30 น.
-                  endDate:   this.$formatDate(first.end_time),
-                  endTime:   this.$formatTime(first.end_time),
-                  
-                  hours: formattedHours,
-                  ot_status: first.ot_status, // ส่งเลขสถานะไปให้ <Status />
-                  children: g.items 
+                  title: first.description || "-",
+                  startDate: this.formatISODate(first.start_time),
+                  startTime: this.formatISOTime(first.start_time),
+                  endDate: this.formatISODate(first.end_time),
+                  endTime: this.formatISOTime(first.end_time),
+                  hours: `${formattedHours} ชั่วโมง`, // ผลรวมชั่วโมง
+                  status: statusText,
+                  statusCode: first.ot_status,
+                  cancellation_reason: first.cancellation_reason,
+                  children: g.items // เก็บข้อมูลลูก (children) ดิบไว้สำหรับดูรายละเอียด
               };
           });
+
+          // เรียงลำดับตาม ID จากมากไปน้อย (ล่าสุดขึ้นก่อน)
+          this.attendanceRecords = records.sort((a, b) => a.id - b.id);
+
+          // เติมข้อมูลตัวกรอง (ปี)
+          const yearSet = new Set();
+          rawData.forEach(r => {
+               if(r.start_time) {
+                 const y = new Date(r.start_time).getFullYear();
+                 if(y) yearSet.add(String(y));
+               }
+          });
+          this.years = Array.from(yearSet).sort().reverse();
+        } else {
+           throw new Error("Invalid response format");
         }
+
+        // รีเซ็ตการเลือก
+        this.selectedItems = [];
+        this.selectAll = false;
+            
       } catch (err) {
-        console.error("Error fetching records:", err);
-        this.error = err;
+        console.error("API Error:", err);
+        this.error = { message: "ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้" };
       } finally {
         this.loading = false;
       }
     },
 
-    // =========================================
+    formatISODate(isoString) {
+      if (!isoString) return "";
+      const date = new Date(isoString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    },
+
+    formatISOTime(isoString) {
+      if (!isoString) return "";
+      const date = new Date(isoString);
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return `${hours}.${minutes} น.`;
+    },
+
     // UI HANDLERS (จัดการเหตุการณ์ UI: ค้นหา, กรอง, เลือก)
-    // =========================================
     onSearch() {
       this.page = 1;
     },
@@ -675,24 +704,22 @@ async fetchRecords() {
       this.selectedItems = this.selectAll ? this.paginatedItems.map(item => item.id) : [];
     },
 
-    // =========================================
     // ACTION HANDLERS (View, Cancel)
-    // =========================================
     // ฟังก์ชันเปิดดูรายละเอียด (View)
     onView(item) {
-      this.selectedItem = item; // Item is already aggregated
+      this.selectedItem = item; // รายการถูกรวบรวมไว้แล้ว
       
-      // Use children for the details table
-      // Need to format them to match the table expectations
+      // ใช้ข้อมูลลูก (children) สำหรับตารางรายละเอียด
+      // ต้องจัดรูปแบบให้ตรงกับที่ตารางต้องการ
       if (item.children && item.children.length > 0) {
           this.relatedItems = item.children.map(c => ({
-              startDate: this.$formatDate(c.start_time),
-              startTime: this.$formatTime(c.start_time),
-              endTime: this.$formatTime(c.end_time),
+              startDate: this.formatISODate(c.start_time),
+              startTime: this.formatISOTime(c.start_time),
+              endTime: this.formatISOTime(c.end_time),
               hours: c.total
           }));
       } else {
-          // Fallback if no children provided (shouldn't happen with new logic)
+          // กรณีสำรองถ้าไม่มีข้อมูลลูก (ไม่ควรเกิดขึ้นด้วย logic ใหม่)
            this.relatedItems = [{
               startDate: item.startDate,
               startTime: item.startTime,
@@ -711,19 +738,19 @@ async fetchRecords() {
         return;
       }
 
-      // Convert selected IDs back to full item objects (these are Parent Groups)
+      // แปลง ID ที่เลือกกลับเป็น object เต็ม (นี่คือกลุ่มหลัก)
       const groupItems = this.attendanceRecords.filter(r => this.selectedItems.includes(r.id));
       
-      // Flatten all children from selected groups to be cancelled
+      // รวมข้อมูลลูกทั้งหมดจากกลุ่มที่เลือกเพื่อทำการยกเลิก
       let allChildren = [];
       groupItems.forEach(group => {
           if (group.children) {
               allChildren = allChildren.concat(group.children.map(c => ({
                    id: c.id,
                    request_no: c.request_id,
-                   startDate: this.$formatDate(c.start_time),
-                   startTime: this.$formatTime(c.start_time),
-                   endTime: this.$formatTime(c.end_time)
+                   startDate: this.formatISODate(c.start_time),
+                   startTime: this.formatISOTime(c.start_time),
+                   endTime: this.formatISOTime(c.end_time)
               })));
           }
       });
@@ -737,18 +764,18 @@ async fetchRecords() {
     async onCancelRequest() {
       this.cancellationReason = "";
       
-      // Validate that we have items to cancel
+      // ตรวจสอบว่ามีรายการที่จะยกเลิกหรือไม่
       if (this.selectedItem) {
-          // If we have children, we cancel all of them
-          // We need an array of objects that 'cancelDialog' expects
-          // cancelDialog expects items with request_no, startDate, etc.
+          // ถ้ามีข้อมูลลูก ให้ยกเลิกทั้งหมด
+          // เราต้องการ array ของ object ที่ 'cancelDialog' รองรับ
+          // cancelDialog ต้องการรายการที่มี request_no, startDate, ฯลฯ
           if (this.selectedItem.children) {
                this.itemsToCancel = this.selectedItem.children.map(c => ({
                    id: c.id,
                    request_no: c.request_id,
-                   startDate: this.$formatDate(c.start_time),
-                   startTime: this.$formatTime(c.start_time),
-                   endTime: this.$formatTime(c.end_time)
+                   startDate: this.formatISODate(c.start_time),
+                   startTime: this.formatISOTime(c.start_time),
+                   endTime: this.formatISOTime(c.end_time)
                }));
           } else {
                this.itemsToCancel = [this.selectedItem];
@@ -764,15 +791,16 @@ async fetchRecords() {
        if (!this.cancellationReason.trim()) return;
 
       try {
-        await new Promise(resolve => setTimeout(resolve, 800)); // Mock API delay
+        await new Promise(resolve => setTimeout(resolve, 800)); // จำลองความล่าช้าของ API
 
         const cancelledRequestIds = new Set(this.itemsToCancel.map(i => i.request_no));
 
         this.attendanceRecords.forEach(r => {
              if(cancelledRequestIds.has(r.request_no)) {
                  r.status = "ยกเลิก";
+                 r.statusCode = 4;
                  r.cancellation_reason = this.cancellationReason;
-                 // Update children stats if needed, or just visual update on parent
+                 // อัปเดตสถานะของลูกถ้าจำเป็น หรือแค่อัปเดตการแสดงผลของแม่
                  if (r.children) {
                      r.children.forEach(c => c.ot_status = 4);
                  }
@@ -780,7 +808,7 @@ async fetchRecords() {
         });
 
         this.cancelDialog = false;
-        this.selectedItems = []; // Clear selection
+        this.selectedItems = []; // ล้างการเลือก
         this.successDialog = true; 
         
       } catch (err) {
@@ -793,85 +821,25 @@ async fetchRecords() {
 </script>
 
 <style scoped>
-  /* ==============================
-   โครงสร้างหลักและการ์ดสถิติ (Stat Card)
-   ============================== */
+ 
+  /*โครงสร้างหลักและการ์ดสถิติ (Stat Card)*/
+
 .main-bg {
 
     background-color: #f5f7fb;
     min-height: 100vh;
 }
 
-.stat-card {
-    border-radius: 8px;
-    border: 1px solid #e8eef7 !important;
-    transition: all 0.3s ease;
-    cursor: pointer;
-
-    padding: 24px !important;
-    min-height: 110px;
-    display: flex;
-    align-items: center;
+/* การแบ่งหน้า (Pagination)*/
+.pagination-controls {
+    justify-content: space-between !important;
 }
 
-.stat-card .subtitle-2 {
-    font-size: 1.5rem;
-    /* เพิ่มขนาดป้ายชื่อ */
+.pagination-range {
+    min-width: 110px;
+    text-align: right;
 }
 
-.stat-card .headline {
-    font-size: 1.25rem;
-    /* เพิ่มขนาดตัวเลข */
-    line-height: 0.9;
-    padding: 17px;
-}
-
-/* ปรับขนาดไอคอน (สำรอง ถ้าต้องการ override) */
-
-.stat-icon {
-    opacity: 0.95;
-    font-size: 80px !important;
-    width: 56px;
-    height: 56px;
-}
-
-.stat-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.stat-card.active.blue-stat {
-    border: 2px solid #1e88e5 !important;
-    box-shadow: 0 6px 18px rgba(30, 136, 229, 0.25);
-    background-color: #e3f2fd !important;
-}
-
-.stat-card.active.orange-stat {
-    border: 2px solid #fb8c00 !important;
-    box-shadow: 0 6px 18px rgba(251, 140, 0, 0.25);
-    background-color: #fff3e0 !important;
-}
-
-.stat-card.active.green-stat {
-    border: 2px solid #43a047 !important;
-    box-shadow: 0 6px 18px rgba(67, 160, 71, 0.25);
-    background-color: #e8f5e9 !important;
-}
-
-.stat-card.active.red-stat {
-    border: 2px solid #e53935 !important;
-    box-shadow: 0 6px 18px rgba(229, 57, 53, 0.25);
-    background-color: #ffebee !important;
-}
-
-.stat-card.active.grey-stat {
-    border: 2px solid #757575 !important;
-    box-shadow: 0 6px 18px rgba(117, 117, 117, 0.18);
-    background-color: #f5f5f5 !important;
-}
-
-/* ==============================
-   การแบ่งหน้า (Pagination)
-   ============================== */
 /* Pagination: ขยับไปด้านขวา และ responsive */
 .pagination-controls {
     justify-content: space-between !important;
@@ -882,11 +850,16 @@ async fetchRecords() {
     text-align: right;
 }
 
-/* mobile: กลับมาอยู่กลางเมื่อหน้าจอเล็ก */
+.gap-2 {
+    gap: 8px;
+}
 
+/* สำหรับมือถือ: */
 @media (max-width: 600px) {
     .pagination-controls {
+        flex-direction: column;
         justify-content: center !important;
+        gap: 12px;
         padding: 8px !important;
     }
 
@@ -896,44 +869,7 @@ async fetchRecords() {
     }
 }
 
-/* ปรับสำหรับมือถือ ให้ไม่ใหญ่มาก */
-@media (max-width: 600px) {
-    .stat-card {
-        padding: 12px !important;
-        min-height: 84px;
-    }
-
-    .stat-icon {
-        font-size: 40px !important;
-        width: 40px;
-        height: 40px;
-    }
-
-    .stat-card .headline {
-        font-size: 1.05rem;
-    }
-}
-
-.gap-2 {
-    gap: 8px;
-}
-
-.pagination-controls {
-    justify-content: space-between !important;
-}
-
-@media (max-width: 600px) {
-    .pagination-controls {
-        flex-direction: column;
-        justify-content: center !important;
-        gap: 12px;
-    }
-}
-
-/* ==============================
-   Scrollbar สำหรับรายการใน Dialog
-   ============================== */
-/* CSS Scrollbar for the cancel dialog list */
+/* สไตล์สำหรับ Scrollbar ในรายการยกเลิก */
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
 }
