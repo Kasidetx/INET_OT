@@ -149,14 +149,7 @@
                   </td>
                   <td class="text-center">{{ item.hours }}</td>
                   <td class="text-center">
-                    <v-chip
-                      :color="statusColor(item.status)"
-                      small
-                      text-color="white"
-                      label
-                    >
-                      {{ item.status }}
-                    </v-chip>
+                    <Status :value="item.ot_status" />
                   </td>
                   <td class="text-center">
                     <v-btn icon small @click="onView(item)" class="mr-1">
@@ -417,12 +410,15 @@
 
 <script>
 import axios from "axios";
+import Status from "@/components/global/Status.vue";
 
 const API_URL = process.env.VUE_APP_API_URL || "http://localhost:5500/api";
 
 export default {
   name: "AttendancePage",
-
+  components: {
+    Status,
+  },
   data() {
     return {
       // --- UI States (สถานะของ UI) ---
@@ -596,76 +592,70 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await axios.get(`${API_URL}/ot/request`);
+        // 1. ยิง API ดึงข้อมูลทั้งหมด (ส่ง emp_id ไปด้วย ถ้ามี)
+        const response = await axios.get(`${API_URL}/ot/request`, {
+           params: { emp_id: this.mockEmpId }
+        });
+
         if (response.data && response.data.success) {
           const rawData = response.data.data;
           
-          // Group by request_id
+          // ---------------------------------------------------------
+          // 2. จัดกลุ่มข้อมูล (Grouping) ตาม request_id
+          // ---------------------------------------------------------
           const groups = {};
-          rawData.forEach(item => {
-              // Ensure we have a key. If request_id is missing, fallback to id for uniqueness
-              const key = item.request_id || `REQ-${item.id}`; 
-              if (!groups[key]) {
-                  groups[key] = {
-                      items: [],
-                      totalHours: 0
-                  };
-              }
-              const hours = parseFloat(item.total) || 0;
-              groups[key].items.push(item);
-              groups[key].totalHours += hours;
+          
+          rawData.forEach((item) => {
+            // ใช้ request_id เป็น key (ถ้าไม่มีใช้ id แทน)
+            const key = item.request_id || item.id;
+            
+            if (!groups[key]) {
+              groups[key] = {
+                items: [],
+                totalHours: 0
+              };
+            }
+            
+            groups[key].items.push(item);
+            // บวกชั่วโมงรวม (แปลงเป็น float ก่อนบวก)
+            groups[key].totalHours += parseFloat(item.total || 0);
           });
 
-          // Convert groups to display array
-          const records = Object.values(groups).map(g => {
-              const first = g.items[0];
-              // Map DB status to text
-              // 1: รออนุมัติ, 2: อนุมัติแล้ว, 3: ไม่อนุมัติ, 4: ยกเลิก
-              const statusMap = { 1: 'รออนุมัติ', 2: 'อนุมัติแล้ว', 3: 'ไม่อนุมัติ', 4: 'ยกเลิก' };
-              const statusText = statusMap[first.ot_status] || 'รออนุมัติ'; 
-
-              // Format total hours to remove long decimals if integers, or keep 2 decimals
+          // ---------------------------------------------------------
+          // 3. แปลง Object Group ให้กลายเป็น Array เพื่อโชว์ในตาราง
+          // ---------------------------------------------------------
+          // ตรงนี้คือส่วนที่คุณถามมา (ผมแก้ตัวแปร r เป็น g ให้เข้าใจง่ายขึ้น)
+          this.attendanceRecords = Object.values(groups).map((g) => {
+              const first = g.items[0]; // ใช้ข้อมูลของตัวแรกเป็น Header
+              
+              // จัดการเรื่องทศนิยมของชั่วโมงรวม
               const totalH = g.totalHours;
               const formattedHours = Number.isInteger(totalH) ? totalH : totalH.toFixed(2);
 
               return {
-                  id: first.id, // Use unique ID for selection
+                  id: first.id, 
                   request_no: first.request_id || "-", 
-                  title: first.description || "-",
+                  title: first.description || "ขออนุมัติ OT", // ถ้าไม่มี description ให้ใส่ default
+                  
+                  // ข้อมูลวันที่/เวลา (เอามาจากรายการแรก)
                   startDate: this.formatISODate(first.start_time),
                   startTime: this.formatISOTime(first.start_time),
                   endDate: this.formatISODate(first.end_time),
                   endTime: this.formatISOTime(first.end_time),
-                  hours: `${formattedHours} ชั่วโมง`, // Summed hours
-                  status: statusText,
-                  cancellation_reason: first.cancellation_reason,
-                  children: g.items // Keep raw children for details
+                  
+                  hours: formattedHours, // ผลรวมชั่วโมง
+                  
+                  // ✅ ส่งค่านี้ไปให้ Component <Status /> (เช่น 1, 2)
+                  ot_status: first.ot_status, 
+                  
+                  // เก็บลูกๆ ไว้เผื่อกดดูรายละเอียด (View Detail)
+                  children: g.items 
               };
           });
-
-          // Sort by ID descending (Newest first)
-          this.attendanceRecords = records.sort((a, b) => b.id - a.id);
-
-          // Populate filters (Year)
-          const yearSet = new Set();
-          rawData.forEach(r => {
-               if(r.start_time) {
-                 const y = new Date(r.start_time).getFullYear();
-                 if(y) yearSet.add(String(y));
-               }
-          });
-          this.years = Array.from(yearSet).sort().reverse();
-        } else {
-           throw new Error("Invalid response format");
         }
-
-        // Reset selections
-        this.selectedItems = [];
-        this.selectAll = false;
-            
       } catch (err) {
-        console.error("API Error:", err);
-        this.error = { message: "ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้" };
+        console.error("Error fetching records:", err);
+        this.error = err;
       } finally {
         this.loading = false;
       }
@@ -689,27 +679,6 @@ export default {
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
       return `${hours}.${minutes} น.`;
-    },
-
-    statusColor(status) {
-      const colors = {
-        อนุมัติแล้ว: "success",
-        รออนุมัติ: "warning",
-        ไม่อนุมัติ: "error",
-        ยกเลิก: "grey",
-      };
-      return colors[status] || "primary";
-    },
-
-    getStatColorCode(color) {
-      const colorMap = {
-        blue: "#1e88e5",
-        orange: "#fb8c00",
-        green: "#43a047",
-        red: "#e53935",
-        grey: "#757575",
-      };
-      return colorMap[color] || "#1e88e5";
     },
 
     // =========================================
