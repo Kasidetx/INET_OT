@@ -79,10 +79,42 @@ const OtModel = {
   },
 
   // หน้า 1
-  async requestOt() {
-    const sql = `SELECT o.id, o.request_id, o.description, o.start_time, o.end_time, o.total, o.request_id, o.ot_status FROM ot o ORDER BY id ASC`
-    const [rows] = await db.query(sql)
+async requestOt(empId) {
+    // 1. เริ่มต้นแค่ SELECT ... FROM ... (อย่าเพิ่งใส่ Order By)
+    let sql = `SELECT o.id, o.request_id, o.description, o.start_time, o.end_time, o.total, o.request_id, o.ot_status, o.emp_id FROM ot o`;
+    const params = [];
+
+    // 2. ถ้ามีเงื่อนไข ให้ใส่ WHERE ต่อท้าย
+    if (empId) {
+        sql += ` WHERE o.emp_id = ? `;
+        params.push(empId);
+    }
+
+    const [rows] = await db.query(sql, params);
     return rows;
+},
+  async findActiveRequest(empId) {
+    const sql = "SELECT * FROM request WHERE created_by = ? AND sts = '1' ORDER BY created_at DESC LIMIT 1";
+    const [rows] = await db.query(sql, [empId]);
+    return rows[0];
+  },
+
+  // 2. หาเลขที่เอกสารล่าสุดเพื่อเอามา Gen เลขถัดไป
+  async getLastRequestDocNo() {
+    const sql = "SELECT doc_no FROM request ORDER BY id DESC LIMIT 1";
+    const [rows] = await db.query(sql);
+    return rows[0]?.doc_no;
+  },
+
+  // 3. สร้างใบคำขอ (Header) ใหม่
+  async createRequest(data) {
+    const sql = `
+      INSERT INTO request (doc_no, title, type, sts, created_by, created_at) 
+      VALUES (?, ?, ?, ?, ?, NOW())
+    `;
+    // sts: 1=Draft/Pending
+    await db.query(sql, [data.doc_no, data.title, data.type, '1', data.created_by]);
+    return data.doc_no;
   },
 
   async create(data) {

@@ -57,11 +57,9 @@ export default {
       // Stats Array: ส่วนนี้ยังต้องมีเพื่อแสดง Card ด้านบน (กำหนดสีของ Card ไว้ตรงนี้ได้เลย)
       stats: [
         { label: 'ทั้งหมด', count: 0, icon: 'mdi-file-document-outline', iconColor: '#1976D2', bg: '#E3F2FD', borderColor: '#BBDEFB' },       // Index 0
-        { label: 'รอหัวหน้าอนุมัติ', count: 0, icon: 'mdi-clock-time-four-outline', iconColor: '#F57C00', bg: '#FFF3E0', borderColor: '#FFE0B2' }, // Index 1
-        { label: 'รอ HR อนุมัติ', count: 0, icon: 'mdi-account-clock-outline', iconColor: '#FFA000', bg: '#FFF8E1', borderColor: '#FFECB3' },   // Index 2
+        { label: 'รออนุมัติ', count: 0, icon: 'mdi-clock-time-four-outline', iconColor: '#F57C00', bg: '#FFF3E0', borderColor: '#FFE0B2' }, // Index 1
         { label: 'อนุมัติ', count: 0, icon: 'mdi-check-circle-outline', iconColor: '#388E3C', bg: '#E8F5E9', borderColor: '#C8E6C9' },          // Index 3
-        { label: 'HR ไม่อนุมัติ', count: 0, icon: 'mdi-close-circle-outline', iconColor: '#D32F2F', bg: '#FFEBEE', borderColor: '#FFCDD2' },    // Index 4
-        { label: 'หัวหน้าไม่อนุมัติ', count: 0, icon: 'mdi-close-box-outline', iconColor: '#D32F2F', bg: '#FFEBEE', borderColor: '#FFCDD2' },   // Index 5
+        { label: 'ไม่อนุมัติ', count: 0, icon: 'mdi-close-circle-outline', iconColor: '#D32F2F', bg: '#FFEBEE', borderColor: '#FFCDD2' },    // Index 4  // Index 5
         { label: 'ยกเลิก', count: 0, icon: 'mdi-cancel', iconColor: '#616161', bg: '#F5F5F5', borderColor: '#E0E0E0' },                        // Index 6
       ],
       employees: [],
@@ -106,18 +104,16 @@ export default {
                 // Map ID เข้ากับ Index ของ Array stats ด้านบน
                 // ถ้า ID ตรงกับ Index ก็ใช้ได้เลย หรือจะเขียน if/else เพื่อความชัวร์ก็ได้
                 if (statusId === 1) this.stats[1].count++;      // รอหัวหน้า
-                else if (statusId === 2) this.stats[2].count++; // รอ HR
-                else if (statusId === 3) this.stats[3].count++; // อนุมัติ
-                else if (statusId === 4) this.stats[4].count++; // HR ไม่อนุมัติ
-                else if (statusId === 5) this.stats[5].count++; // หัวหน้าไม่อนุมัติ
-                else if (statusId === 6) this.stats[6].count++; // ยกเลิก
+                else if (statusId === 2) this.stats[2].count++; // อนุมัติ
+                else if (statusId === 3) this.stats[3].count++; // ไม่อนุมัติ
+                else if (statusId === 4) this.stats[4].count++; // ยกเลิก
                 // ----------------------------------------------------
 
                 const desc = ot.description || "-";
                 const detailParts = desc.split('\n');
 
                 return {
-                    id: `${emp.eid}-${ot.request_id}-${idx}`,
+                    id: `${idx+1}`,
                     reqNo: ot.request_id || "-",
                     detailTitle: detailParts[0] || desc,
                     detailDesc: detailParts[1] || "",

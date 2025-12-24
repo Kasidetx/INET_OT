@@ -5,35 +5,39 @@
         <v-breadcrumbs class="px-0 mb-4" :items="breadcrumbs" />
 
         <!-- TOP STAT BOXES -->
-        <v-row class="mb-4">
-          <v-col
-            cols="12"
+        <v-row class="mb-6">
+          <v-col 
+            cols="12" 
             sm="6"
-            md="2"
-            v-for="(stat, i) in statsComputed"
-            :key="i"
+            md 
+            v-for="(stat, index) in statsComputed" 
+            :key="index"
           >
-            <v-card
-              class="pa-4 stat-card"
-              outlined
-              elevation="0"
-              :class="[
-
-                { active: isStatActive(stat.label) },
-                `${stat.color}-stat`
-              ]"
-              @click="onStatClick(stat.label)"
-            >
-              <div class="d-flex align-center">
-                <v-icon class="stat-icon mr-3" size="56" :color="stat.color">{{
-                  stat.icon
-                }}</v-icon>
-                <div>
-                  <div class="subtitle-2 grey--text">{{ stat.label }}</div>
-                  <div class="headline font-weight-bold">{{ stat.value }}</div>
+            <v-hover v-slot="{ hover }">
+              <v-card 
+                class="pa-5 rounded-xl d-flex align-center transition-swing"
+                :elevation="hover ? 4 : 0"
+                :style="`border: 1px solid ${isStatActive(stat.label) ? stat.borderColor : '#E0E0E0'}; height: 100%; background: white; transform: ${isStatActive(stat.label) ? 'scale(1.02)' : 'scale(1)'}`"
+                @click="onStatClick(stat.label)"
+                style="cursor: pointer; transition: all 0.2s;"
+              >
+                <div 
+                  class="rounded-lg d-flex justify-center align-center mr-5 elevation-0"
+                  :style="`background-color: ${stat.bg}; width: 64px; height: 64px; min-width: 64px; border: 1px solid ${stat.borderColor}`"
+                >
+                  <v-icon size="30" :color="stat.iconColor">{{ stat.icon }}</v-icon>
                 </div>
-              </div>
-            </v-card>
+                
+                <div class="flex-grow-1">
+                  <div class="text-h4 font-weight-bold mb-0" style="color: #2D3748; line-height: 1.2;">
+                    {{ stat.count }}
+                  </div>
+                  <div class="text-caption font-weight-medium grey--text text--darken-1 mt-1">
+                    {{ stat.label }}
+                  </div>
+                </div>
+              </v-card>
+            </v-hover>
           </v-col>
         </v-row>
 
@@ -500,9 +504,25 @@ export default {
         if (r.status && counts.hasOwnProperty(r.status)) counts[r.status]++;
       });
 
+      // Updated colors mapping for new design
+      const theme = {
+        blue:   { bg: '#E3F2FD', border: '#90CAF9', icon: '#1976D2' },
+        orange: { bg: '#FFF3E0', border: '#FFCC80', icon: '#EF6C00' },
+        green:  { bg: '#E8F5E9', border: '#A5D6A7', icon: '#2E7D32' },
+        red:    { bg: '#FFEBEE', border: '#EF9A9A', icon: '#C62828' },
+        grey:   { bg: '#F5F5F5', border: '#E0E0E0', icon: '#616161' },
+      };
+
       return this.stats.map((s) => {
-        let value = s.label === "ทั้งหมด" ? all : counts[s.label] || 0;
-        return { ...s, value };
+        let count = s.label === "ทั้งหมด" ? all : counts[s.label] || 0;
+        const t = theme[s.color] || theme.blue;
+        return { 
+            ...s, 
+            count,
+            bg: t.bg,
+            borderColor: t.border,
+            iconColor: t.icon
+        };
       });
     },
 
@@ -576,7 +596,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await axios.get(`${API_URL}/ot`);
+        const response = await axios.get(`${API_URL}/ot/request`);
         if (response.data && response.data.success) {
           const rawData = response.data.data;
           

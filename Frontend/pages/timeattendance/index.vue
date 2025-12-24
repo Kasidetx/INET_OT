@@ -181,6 +181,8 @@ export default {
       selectedEntry: null,
       overtimeMode: "",
       dialogConfirm: false,
+
+      mockEmpId: '61301',
     };
   },
   created() {
@@ -195,7 +197,11 @@ export default {
 
     async fetchTimeEntries() {
       try {
-        const resp = await api.get("/api/ot/request");
+        const resp = await api.get("/api/ot/request", {
+            params: {
+                emp_id: this.mockEmpId
+            }
+        });
 
         // สมมติ resp.data คือก้อน JSON ที่คุณส่งมา
         if (resp.data && resp.data.data) {

@@ -1,8 +1,26 @@
 // src/controllers/ot.controller.js
 import OtModel from '../models/ot.model.js'
 
+const generateNextDocNo = (lastDocNo) => {
+    // 1. ถ้ายังไม่มีเอกสารใดๆ เลยในระบบ ให้เริ่มที่ OT-1
+    if (!lastDocNo) return 'OT-1';
+    
+    // 2. แยกส่วน 'OT' กับ 'ตัวเลข' (สมมติ format คือ OT-123)
+    const parts = lastDocNo.split('-'); 
+    // parts[0] = 'OT', parts[1] = '1'
 
-
+    if (parts.length < 2) return 'OT-1'; // กันเหนียว
+    
+    // 3. แปลงเป็นตัวเลขแล้วบวก 1
+    const numberPart = parseInt(parts[1], 10);
+    
+    if (isNaN(numberPart)) return 'OT-1'; // ถ้าแปลงไม่ได้ ให้เริ่มใหม่
+    
+    const nextNumber = numberPart + 1;
+    
+    // 4. ส่งคืนค่ารูปแบบ OT-X
+    return `OT-${nextNumber}`;
+};
 
 export const getAllEmployee = async (req, res) => {
   try {
@@ -16,11 +34,16 @@ export const getAllEmployee = async (req, res) => {
 
 export const getRequest = async (req, res) => {
   try {
-    const data = await OtModel.requestOt()
-    res.json({ success: true, data})
+    // 1. ดึงค่า emp_id ที่ส่งมาจาก Frontend (เช่น ?emp_id=61301)
+    const { emp_id } = req.query; 
+
+    // 2. ส่งต่อให้ Model
+    const data = await OtModel.requestOt(emp_id);
+    
+    res.json({ success: true, data });
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ success: false, message: 'Internal server error getRequest' })
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Internal server error getRequest' });
   }
 }
 
@@ -76,31 +99,69 @@ export const createOt = async (req, res) => {
   try {
     const body = req.body
 
-    // เช็คค่าที่จำเป็น
-    if (!body.start_time || !body.end_time) {
-      return res.status(400).json({
-        success: false,
-        message: 'start_time AND end_time'
-      })
+    // Validation ...
+    if (!body.start_time || !body.end_time || !body.emp_id) {
+      return res.status(400).json({ success: false, message: 'Require data' })
     }
     
-    // Calculate total hours
     const total = calculateOtHours(body.start_time, body.end_time)
 
-    // Prepare data for DB
+    // ----------------------------------------------------
+    // START: Logic Grouping & Running Number
+    // ----------------------------------------------------
+    let docNo;
+    
+    // 1. ลองหาใบเดิมที่ยัง Active ของพนักงานคนนี้ก่อน
+    const activeRequest = await OtModel.findActiveRequest(body.emp_id);
+    
+    if (activeRequest) {
+        // ✅ กรณี A: มีใบเดิมที่ยังไม่จบ -> ใช้เลขเดิม (เช่น OT-1)
+        docNo = activeRequest.doc_no;
+        console.log(`[OT] Found active request, Using: ${docNo}`);
+    } else {
+        // ✅ กรณี B: ไม่มีใบเดิม -> สร้างใบใหม่ -> รันเลขต่อจากล่าสุดในระบบ
+        
+        // ดึงเลขล่าสุดจาก Database (ดูว่าล่าสุดเป็น OT อะไร เช่น OT-5)
+        const lastDoc = await OtModel.getLastRequestDocNo();
+        
+        // Gen เลขใหม่ (จะได้ OT-6)
+        docNo = generateNextDocNo(lastDoc);
+        
+        const typeId = body.type || 1; // Default type=1 (NORMAL) ถ้า frontend ไม่ส่งมา
+
+        // สร้าง Header Request ใหม่
+        await OtModel.createRequest({
+            doc_no: docNo,
+            title: 'ขออนุมัติทำโอที',
+            type: typeId,
+            sts: '1', // Active
+            created_by: body.emp_id
+        });
+        console.log(`[OT] Created NEW request: ${docNo}`);
+    }
+    // ----------------------------------------------------
+
     const dbData = {
       ...body,
+      request_id: docNo, // ใส่เลขที่ได้มา (OT-1 หรือ OT-2...)
       start_time: formatDateForMySQL(body.start_time),
       end_time: formatDateForMySQL(body.end_time),
-      total
+      total,
+      created_by: body.emp_id
     }
 
     const created = await OtModel.create(dbData)
-    console.log('Created OT:', created)
-    res.status(201).json({ success: true, data: created })
+    
+    res.status(201).json({ 
+        success: true, 
+        data: created,
+        doc_no: docNo, // ส่งเลขเอกสารกลับไปให้ Frontend ดูด้วย
+        message: activeRequest ? 'Added to existing request' : 'Created new request'
+    })
+
   } catch (err) {
     console.error(err)
-    res.status(500).json({ success: false, message: 'Internal server error - createOT' })
+    res.status(500).json({ success: false, message: 'Internal server error' })
   }
 }
 

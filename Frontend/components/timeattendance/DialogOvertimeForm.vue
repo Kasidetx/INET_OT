@@ -1,3 +1,4 @@
+
 <template>
   <v-dialog v-model="show" max-width="680px" persistent>
     <v-card :style="styles.card">
@@ -14,6 +15,33 @@
 
       <!-- Body -->
       <v-card-text :style="styles.body">
+        <div style="background-color: #fff3e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed orange;">
+            <div style="color: orange; font-weight: bold; font-size: 12px; margin-bottom: 5px;">
+                🔧 DEV MODE: จำลองเป็นพนักงาน
+            </div>
+            <v-row dense>
+                <v-col cols="12">
+                    <v-text-field
+                        v-model="mockEmpId"
+                        label="รหัสพนักงาน (emp_id)"
+                        placeholder="เช่น 61301, 61302"
+                        dense
+                        outlined
+                        hide-details
+                        prepend-inner-icon="mdi-account-cowboy-hat"
+                    ></v-text-field>
+                </v-col>
+            </v-row>
+        </div>
+        <v-select
+            v-model="selectedType"
+            :items="employeeTypes"
+            item-text="name"
+            item-value="id" 
+            label="ประเภทพนักงาน"
+            outlined
+         ></v-select>
+
         <!-- วัน-เวลาเข้างาน -->
         <v-row class="mb-4" no-gutters align="center">
           <v-col cols="12" sm="4" class="pr-3">
@@ -145,6 +173,15 @@ export default {
       tempTime: { HH: "00", mm: "00" },
       showDatePicker: false,
       showTimePicker: false,
+      mockEmpId: '61301',
+
+      selectedType: 1, // ค่า Default ประเภท
+      employeeTypes: [
+          { id: 1, name: 'NORMAL' },
+          { id: 2, name: 'SHIFT_8' },
+          { id: 3, name: 'SHIFT_12' },
+          { id: 4, name: 'HOURLY' },
+      ],
 
       // inline styles
       styles: {
@@ -337,6 +374,9 @@ export default {
         start_time: this.checkInDate && this.checkInTime ? `${this.checkInDate} ${this.checkInTime}:00` : null,
         end_time: this.checkOutDate && this.checkOutTime ? `${this.checkOutDate} ${this.checkOutTime}:00` : null,
         description: this.description || "",
+        emp_id: this.mockEmpId, 
+        created_by: this.mockEmpId,
+        type: this.selectedType
       };
 
       if (!payload.start_time || !payload.end_time) return;
