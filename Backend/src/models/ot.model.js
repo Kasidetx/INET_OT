@@ -1,10 +1,8 @@
 import db from "../config/db.js";
 
 const OtModel = {
-
-
-  async AllEmployee() {
-    const sql = `
+  async AllEmployee(empId) {
+    let sql = `
     SELECT 
         e.id AS employee_id,
         e.emp_id AS employee_code,
@@ -12,8 +10,6 @@ const OtModel = {
         e.position,
         e.request AS total_requests_count,
         e.total_hour AS total_ot_hour_summary,
- 
-        
         v.request_id,
         v.description,
         v.total AS ot_duration,
@@ -21,14 +17,22 @@ const OtModel = {
         v.end_time,
         v.created_at,
         v.ot_status
-
     FROM view_employee e
     LEFT JOIN view_emp_ot v ON e.emp_id = v.emp_id
-    ORDER BY e.id ASC, v.created_at DESC`;
+    `;
 
-    const [flatRows] = await db.query(sql);
-    const groupedData = this.groupEmployeeData(flatRows);
-    return groupedData;
+    const params = [];
+
+    // ตอนนี้รู้จัก empId แล้ว โค้ดนี้จะทำงานได้
+    if (empId) {
+      sql += ` WHERE e.emp_id = ? `;
+      params.push(empId);
+    }
+
+    sql += ` ORDER BY e.id ASC, v.created_at DESC`;
+
+    const [flatRows] = await db.query(sql, params);
+    return this.groupEmployeeData(flatRows);
   },
 
   // function group
@@ -41,7 +45,7 @@ const OtModel = {
       // A. จัดการข้อมูลพนักงานหลัก (Parent)
       if (!employeesMap.has(employee_code)) {
         const EmployeeInfo = {
-          eid : row.employee_id,
+          eid: row.employee_id,
           employee_code: employee_code,
           employee_name: row.employee_name,
           position: row.position,
@@ -60,7 +64,6 @@ const OtModel = {
       if (request_id) {
         // มีรายละเอียด OT
         const otRequestDetail = {
-         
           request_id: row.request_id,
           description: row.description,
           ot_duration: row.ot_duration,
@@ -79,22 +82,15 @@ const OtModel = {
   },
 
   // หน้า 1
-async requestOt(empId) {
-    // 1. เริ่มต้นแค่ SELECT ... FROM ... (อย่าเพิ่งใส่ Order By)
-    let sql = `SELECT o.id, o.request_id, o.description, o.start_time, o.end_time, o.total, o.request_id, o.ot_status, o.emp_id FROM ot o`;
-    const params = [];
-
-    // 2. ถ้ามีเงื่อนไข ให้ใส่ WHERE ต่อท้าย
-    if (empId) {
-        sql += ` WHERE o.emp_id = ? `;
-        params.push(empId);
-    }
-
-    const [rows] = await db.query(sql, params);
+  async requestOt() {
+    const sql = `SELECT o.id, o.request_id, o.description, o.start_time, o.end_time, o.total, o.request_id, o.ot_status FROM ot o ORDER BY id ASC`;
+    const [rows] = await db.query(sql);
     return rows;
-},
+  },
+
   async findActiveRequest(empId) {
-    const sql = "SELECT * FROM request WHERE created_by = ? AND sts = '1' ORDER BY created_at DESC LIMIT 1";
+    const sql =
+      "SELECT * FROM request WHERE created_by = ? AND sts = '1' ORDER BY created_at DESC LIMIT 1";
     const [rows] = await db.query(sql, [empId]);
     return rows[0];
   },
@@ -113,7 +109,13 @@ async requestOt(empId) {
       VALUES (?, ?, ?, ?, ?, NOW())
     `;
     // sts: 1=Draft/Pending
-    await db.query(sql, [data.doc_no, data.title, data.type, '1', data.created_by]);
+    await db.query(sql, [
+      data.doc_no,
+      data.title,
+      data.type,
+      "1",
+      data.created_by,
+    ]);
     return data.doc_no;
   },
 

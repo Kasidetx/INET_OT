@@ -24,26 +24,26 @@ const generateNextDocNo = (lastDocNo) => {
 
 export const getAllEmployee = async (req, res) => {
   try {
-    const data = await OtModel.AllEmployee()
-    res.json({ success: true, data })
+    // รับค่า ?emp_id=xxx จาก URL
+    const { emp_id } = req.query; 
+
+    // ส่งให้ Model (Model จะตัดสินใจเองว่าถ้าเป็น null คือดึงทั้งหมด)
+    const data = await OtModel.AllEmployee(emp_id);
+    
+    res.json({ success: true, data });
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ success: false, message: 'Internal server error getAllEmployee' })
+    console.error("Error getAllEmployee:", err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }
 
 export const getRequest = async (req, res) => {
   try {
-    // 1. ดึงค่า emp_id ที่ส่งมาจาก Frontend (เช่น ?emp_id=61301)
-    const { emp_id } = req.query; 
-
-    // 2. ส่งต่อให้ Model
-    const data = await OtModel.requestOt(emp_id);
-    
-    res.json({ success: true, data });
+    const data = await OtModel.requestOt()
+    res.json({ success: true, data})
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Internal server error getRequest' });
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Internal server error getRequest' })
   }
 }
 
