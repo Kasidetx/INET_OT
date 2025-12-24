@@ -31,24 +31,36 @@ export default {
       // ใช้ชุดสีที่ Modern ขึ้น (Emerald, Amber, Rose, Slate)
       const map = {
         1: { 
-          label: "รออนุมัติ", 
+          label: "รอหัวหน้าอนุมัติ", 
           bg: "#FFFBEB", // เหลืองอ่อนมาก
           text: "#B45309", // ส้มเข้ม
           border: "#FDE68A" // ขอบเหลืองจางๆ
         },
         2: { 
-          label: "อนุมัติแล้ว", 
+          label: "รอหัวหน้า HR อนุมัติ", 
+          bg: "#FFFBEB", // เหลืองอ่อนมาก
+          text: "#B45309", // ส้มเข้ม
+          border: "#FDE68A" // ขอบเหลืองจางๆ
+        },
+        3: { 
+          label: "อนุมัติ", 
           bg: "#ECFDF5", // เขียว Emerald อ่อน
           text: "#047857", // เขียวเข้ม
           border: "#A7F3D0" 
         },
-        3: { 
-          label: "ไม่อนุมัติ", 
+        4: { 
+          label: "HR ไม่อนุมัติ", 
           bg: "#FEF2F2", // แดง Rose อ่อน
           text: "#B91C1C", // แดงเข้ม
           border: "#FECACA" 
         },
-        4: { 
+        5: { 
+          label: "หัวหน้าไม่อนุมัติ", 
+          bg: "#FEF2F2", // แดง Rose อ่อน
+          text: "#B91C1C", // แดงเข้ม
+          border: "#FECACA" 
+        },
+        6: { 
           label: "ยกเลิก", 
           bg: "#F1F5F9", // เทา Slate
           text: "#475569", // เทาเข้ม
