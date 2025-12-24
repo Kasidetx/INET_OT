@@ -182,7 +182,7 @@ export default {
       overtimeMode: "",
       dialogConfirm: false,
 
-      mockEmpId: '61301',
+      mockEmpId: '61302',
     };
   },
   created() {
@@ -224,9 +224,11 @@ export default {
                   status: req.ot_status,    // สถานะ (เช่น รออนุมัติ)
                   description: req.description || "-",        // รายละเอียด
                   
+
                   // --- ส่วนที่ต้องใช้สำหรับ Logic (Checkbox, Edit, Status) ---
-                  id: req.id,
+                  id: req.id,                 // ID ของรายการ OT
                   request_id: req.request_id,
+                  emp_id: this.mockEmpId,
                   selected: false,      // จำเป็นสำหรับ Checkbox เลือกรายการ
                 });
               });
@@ -273,12 +275,9 @@ export default {
       this.overtimeMode = "edit";
       this.selectedEntry = {
         ...entry,
-        title: "แก้ไขคำขอล่วงเวลา",
-        start_time: raw.start_time,
-        end_time: raw.end_time,
-        id: raw.id,
-        description: raw.description ?? entry.description ?? "",
       };
+
+      console.log("Editing entry:", this.selectedEntry);
 
       this.dialogOvertimeForm = true;
     },
