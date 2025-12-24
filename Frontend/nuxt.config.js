@@ -26,7 +26,8 @@ export default {
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
-    { src: '~/plugins/vee-validate.js' }
+    { src: '~/plugins/vee-validate.js' },
+    { src: '~/plugins/formatter-datetime.js' }
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components

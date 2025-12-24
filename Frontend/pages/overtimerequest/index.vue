@@ -408,7 +408,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/service/api";
 import Status from "@/components/global/Status.vue";
 
 const API_URL = process.env.VUE_APP_API_URL || "http://localhost:5500/api";
@@ -584,7 +584,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await axios.get(`${API_URL}/ot/request`);
+        const response = await api.get(`api/ot/request`);
         if (response.data && response.data.success) {
           const rawData = response.data.data;
           
