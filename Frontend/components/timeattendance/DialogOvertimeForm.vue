@@ -1,8 +1,6 @@
-
 <template>
   <v-dialog v-model="show" max-width="680px" persistent>
     <v-card :style="styles.card">
-      <!-- Header -->
       <v-card-title class="d-flex justify-center align-center" :style="styles.header">
         <span class="font-weight-bold text-center" :style="styles.headerTitle">
           {{ headerText }}
@@ -13,36 +11,19 @@
         </v-btn>
       </v-card-title>
 
-      <!-- Body -->
       <v-card-text :style="styles.body">
         <div style="background-color: #fff3e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed orange;">
             <div style="color: orange; font-weight: bold; font-size: 12px; margin-bottom: 5px;">
-                🔧 DEV MODE: จำลองเป็นพนักงาน
+                🔧 DEV MODE: ข้อมูลพนักงาน
             </div>
             <v-row dense>
                 <v-col cols="12">
-                    <v-text-field
-                        v-model="mockEmpId"
-                        label="รหัสพนักงาน (emp_id)"
-                        placeholder="เช่น 61301, 61302"
-                        dense
-                        outlined
-                        hide-details
-                        prepend-inner-icon="mdi-account-cowboy-hat"
-                    ></v-text-field>
+                    <span outlined dense hide-details font-weight=700 font-size=16px>รหัสพนักงาน: {{ emp_id }}</span>
+                    <span outlined dense hide-details font-weight=700 font-size=16px>request_id: {{ request_id }}</span>
                 </v-col>
             </v-row>
         </div>
-        <v-select
-            v-model="selectedType"
-            :items="employeeTypes"
-            item-text="name"
-            item-value="id" 
-            label="ประเภทพนักงาน"
-            outlined
-         ></v-select>
 
-        <!-- วัน-เวลาเข้างาน -->
         <v-row class="mb-4" no-gutters align="center">
           <v-col cols="12" sm="4" class="pr-3">
             <span :style="styles.fieldLabel">วัน-เวลาเข้างาน :</span>
@@ -57,7 +38,6 @@
           </v-col>
         </v-row>
 
-        <!-- วัน-เวลาออกงาน -->
         <v-row class="mb-4" no-gutters align="center">
           <v-col cols="12" sm="4" class="pr-3">
             <span :style="styles.fieldLabel">วัน-เวลาออกงาน :</span>
@@ -72,7 +52,6 @@
           </v-col>
         </v-row>
 
-        <!-- รายละเอียด -->
         <v-row class="mb-4" no-gutters align="start">
           <v-col cols="12" sm="4" class="pr-3">
             <span :style="styles.fieldLabel">รายละเอียด :</span>
@@ -84,7 +63,6 @@
         </v-row>
       </v-card-text>
 
-      <!-- Footer -->
       <v-card-actions style="gap: 10px;" class="pb-8 pt-0">
         <v-row no-gutters justify="end" @click="close">
           <v-btn outlined color="#0863B6" rounded min-width="100px" @click="close">
@@ -100,7 +78,6 @@
       </v-card-actions>
     </v-card>
 
-    <!-- Date Picker Dialog -->
     <v-dialog v-model="showDatePicker" max-width="400px">
       <v-card style="border-radius:12px;">
         <v-card-title class="d-flex justify-center" :style="styles.dateHeader">
@@ -113,7 +90,6 @@
       </v-card>
     </v-dialog>
 
-    <!-- Time Picker Dialog -->
     <v-dialog v-model="showTimePicker" max-width="380px">
       <div :style="styles.timeWrapper">
         <div :style="styles.timeTopBar">
@@ -165,6 +141,8 @@ export default {
       checkInTime: null,
       checkOutDate: null,
       checkOutTime: null,
+      request_id: null,
+      emp_id: null,
       description: "",
 
       // picker state
@@ -173,15 +151,6 @@ export default {
       tempTime: { HH: "00", mm: "00" },
       showDatePicker: false,
       showTimePicker: false,
-      mockEmpId: '61301',
-
-      selectedType: 1, // ค่า Default ประเภท
-      employeeTypes: [
-          { id: 1, name: 'NORMAL' },
-          { id: 2, name: 'SHIFT_8' },
-          { id: 3, name: 'SHIFT_12' },
-          { id: 4, name: 'HOURLY' },
-      ],
 
       // inline styles
       styles: {
@@ -226,6 +195,9 @@ export default {
     headerText() {
       return this.isEdit ? "แก้ไขคำขอล่วงเวลา" : "เพิ่มคำขอล่วงเวลา";
     },
+    empId() {
+      return this.emp_id || null;
+    },
     saveButtonText() {
       return this.isEdit ? "บันทึกการแก้ไข" : "บันทึกคำขอ";
     },
@@ -235,11 +207,11 @@ export default {
     },
     checkInDisplay() {
       if (!this.checkInDate || !this.checkInTime) return "";
-      return `${this.formatDateThai(this.checkInDate)} ${this.checkInTime}`;
+      return `${this.checkInDate} ${this.checkInTime}`;
     },
     checkOutDisplay() {
       if (!this.checkOutDate || !this.checkOutTime) return "";
-      return `${this.formatDateThai(this.checkOutDate)} ${this.checkOutTime}`;
+      return `${this.checkOutDate} ${this.checkOutTime}`;
     },
   },
   watch: {
@@ -271,17 +243,27 @@ export default {
 
       this.id = item.id ?? null;
       this.description = item.description || "";
+      
+      // ✅ แก้จุดที่ 1: ดึง Request ID มาด้วย
+      this.request_id = item.request_id || null;
 
-      if (item.start_time) {
-        const d1 = new Date(item.start_time);
+      // ✅ แก้จุดที่ 2: ดึง Emp ID จากหลายๆ แหล่งที่เป็นไปได้
+      this.emp_id = item.emp_id;
+      
+      // ✅ แก้จุดที่ 3: ดึง Type
+      if (item.type) this.selectedType = item.type;
+
+      // จัดการเวลา
+      if (item.checkIn) {
+        const d1 = new Date(item.checkIn);
         this.checkInDate = this.toLocalYMD(d1);
-        this.checkInTime = this.toHHmm(d1);
+        this.checkInTime = this.toHHmm(d1) + " น.";
       }
 
-      if (item.end_time) {
-        const d2 = new Date(item.end_time);
+      if (item.checkOut) {
+        const d2 = new Date(item.checkOut);
         this.checkOutDate = this.toLocalYMD(d2);
-        this.checkOutTime = this.toHHmm(d2);
+        this.checkOutTime = this.toHHmm(d2) + " น.";
       }
     },
     resetForm() {
@@ -291,6 +273,8 @@ export default {
       this.checkOutDate = null;
       this.checkOutTime = null;
       this.description = "";
+      this.request_id = null; // reset request_id
+      // this.emp_id = null; // อาจจะไม่ reset emp_id ถ้าอยากให้จำค่าเดิมตอน create ต่อเนื่อง
 
       this.pickerTarget = null;
       this.selectedDate = null;
@@ -311,19 +295,6 @@ export default {
       const hh = String(d.getHours()).padStart(2, "0");
       const mm = String(d.getMinutes()).padStart(2, "0");
       return `${hh}:${mm}`;
-    },
-    formatDateThai(dateStr) {
-      try {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString("th-TH", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        });
-      } catch {
-        return dateStr;
-      }
     },
 
     // picker flow
@@ -368,14 +339,18 @@ export default {
       this.resetForm();
     },
 
+
     async submit() {
       const payload = {
         id: this.id,
+        // ✅ แก้จุดที่ 4: ส่ง request_id กลับไปด้วย (เพื่อให้ Backend รู้ว่าเป็นกลุ่มเดิม)
+        request_id: this.request_id,
+        
         start_time: this.checkInDate && this.checkInTime ? `${this.checkInDate} ${this.checkInTime}:00` : null,
         end_time: this.checkOutDate && this.checkOutTime ? `${this.checkOutDate} ${this.checkOutTime}:00` : null,
         description: this.description || "",
-        emp_id: this.mockEmpId, 
-        created_by: this.mockEmpId,
+        emp_id: this.emp_id, 
+        created_by: this.emp_id,
         type: this.selectedType
       };
 
