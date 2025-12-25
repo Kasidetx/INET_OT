@@ -68,7 +68,7 @@ export default {
         }
       };
       
-      return map[this.value] || { label: "ไม่ระบุ", bg: "#F3F4F6", text: "#9CA3AF", border: "transparent" };
+      return map[this.value] || { label: "ไม่มี", bg: "#F3F4F6", text: "#9CA3AF", border: "transparent" };
     }
   }
 };

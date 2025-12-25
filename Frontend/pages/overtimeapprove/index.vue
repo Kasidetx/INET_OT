@@ -139,8 +139,19 @@ export default {
           const reqs = (emp.requests || []).filter(r => matchStatus(r.status))
           const hay = `${emp.empCode} ${emp.name} ${emp.position}`.toLowerCase()
           const passSearch = !q || hay.includes(q)
+
           if (!passSearch || reqs.length === 0) return null
-          return { ...emp, requests: reqs, itemsCount: reqs.length }
+
+          const sumFilteredHours = reqs.reduce((sum, r) => sum + (r.valHours || 0), 0)
+          const formattedTotal = Number.isInteger(sumFilteredHours) ? sumFilteredHours : sumFilteredHours.toFixed(2)
+
+          return {
+            ...emp,
+            requests: reqs,
+            itemsCount: reqs.length,
+
+            totalHours: sumFilteredHours > 0 ? `${formattedTotal} ชั่วโมง` : '-'
+          }
         })
         .filter(Boolean)
     },
@@ -292,7 +303,7 @@ export default {
             const duration = Number(ot.ot_duration || 0)
             totalHoursVal += duration
 
-            const statusId = Number(ot.ot_status) || 1
+            const statusId = Number(ot.sts) || 1
 
             // Count Stats
             this.stats[0].count++
@@ -316,6 +327,7 @@ export default {
               timeStart: this.formatDateTime(ot.start_time, 'time'),
               timeEnd: this.formatDateTime(ot.end_time, 'time'),
               hours: `${duration} ชั่วโมง`,
+              valHours: duration,
               detailTitle: desc.split('\n')[0] || desc,
               detailDesc: desc.split('\n')[1] || "",
               status: statusId,

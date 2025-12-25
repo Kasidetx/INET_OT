@@ -11,15 +11,31 @@
         <img src="../assets/img/logoTimestamp.png" class="my-6 mx-3" max-width="230" height="100"
           style="object-fit: contain" />
       </v-row>
+
       <v-list dense>
-        <v-subheader class="custom-subheader"> พนักงาน </v-subheader>
-        <v-divider class="py-2 mx-2" />
-        <v-list-item v-for="(item, index) in items_hr" :key="'hr-' + index" :to="item.to" router class="py-1">
+        <v-subheader class="custom-subheader"> บริการพนักงาน </v-subheader>
+
+        <v-list-item v-for="(item, index) in items_employee" :key="'emp-' + index" :to="item.to" router class="py-1">
           <v-list-item-icon>
             <v-icon>{{ item.icon }}</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
             <v-list-item-title style="font-size: 1rem; color: #636363; padding: 4px 0">
+              {{ item.title }}
+            </v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+
+        <v-divider class="my-2 mx-4"></v-divider>
+
+        <v-subheader class="custom-subheader"> สำหรับฝ่ายบุคคล (HR) </v-subheader>
+
+        <v-list-item v-for="(item, index) in items_hr" :key="'hr-' + index" :to="item.to" router class="py-1">
+          <v-list-item-icon>
+            <v-icon color="#0863B6">{{ item.icon }}</v-icon>
+          </v-list-item-icon>
+          <v-list-item-content>
+            <v-list-item-title style="font-size: 1rem; color: #0863B6; font-weight: 500; padding: 4px 0">
               {{ item.title }}
             </v-list-item-title>
           </v-list-item-content>
@@ -65,7 +81,6 @@
       </v-menu>
     </v-app-bar>
 
-    <!-- Content -->
     <v-main class="container">
       <v-container>
         <Nuxt />
@@ -89,27 +104,31 @@ export default {
         position: "",
         profile: "",
       },
-      items_hr: [
+      // กลุ่ม 1: เมนูสำหรับพนักงานทั่วไป (ลงเวลา / ขอ OT)
+      items_employee: [
         {
           icon: "mdi-clock-time-eight-outline",
-          title: "ระบบเบิกค่าล่วงเวลา",
+          title: "เบิกคำขอค่าล่วงเวลา", // ปรับชื่อให้สื่อความหมายชัดขึ้น
           to: "/timeattendance",
-          roles: ["HR"],
-        },
+          roles: ["User"],
+        }
+      ],
+      // กลุ่ม 2: เมนูสำหรับ HR (จัดการ / อนุมัติ)
+      items_hr: [
         {
-          icon: "mdi-clock-alert",
-          title: "ระบบเบิกค่าล่วงเวลา",
+          icon: "mdi-cog-outline",
+          title: "ตั้งค่าระบบ OT", // ปรับชื่อเพื่อไม่ให้ซ้ำกับข้างบน
           to: "/overtime",
           roles: ["HR"],
         },
         {
-          icon: 'mdi-clock',
-          title: 'ระบบลงเวลางาน',
+          icon: 'mdi-file-document-edit-outline', // เปลี่ยนไอคอนให้สื่อถึงการขอเอกสาร
+          title: 'แบบฟอร์มขอ OT',
           to: '/overtimerequest',
-          roles: ['HR']
+          roles: ['User']
         },
         {
-          icon: 'mdi-clock',
+          icon: 'mdi-checkbox-marked-circle-outline', // เปลี่ยนไอคอนให้สื่อถึงการอนุมัติ
           title: 'อนุมัติค่าล่วงเวลา',
           to: '/overtimeapprove',
           roles: ['HR']
@@ -124,6 +143,7 @@ export default {
 </script>
 
 <style scoped>
+/* Style เดิม */
 .custom-color {
   color: #d1392b;
 }
@@ -136,7 +156,6 @@ export default {
 .custom-image {
   max-width: 230px;
   max-height: 94px;
-
   object-fit: contain;
 }
 
@@ -167,7 +186,6 @@ export default {
       rgba(255, 255, 255, 0.9) 100%);
   border: 1px solid #fff;
   border-radius: 16px;
-
   gap: 10px;
 }
 
@@ -196,8 +214,13 @@ export default {
   padding: 8px 12px 0;
 }
 
+/* ปรับแต่ง Subheader ให้ดูสวยขึ้น */
 .custom-subheader {
-  color: #636363;
-  font-size: 1rem;
+  color: #9e9e9e;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
 }
 </style>

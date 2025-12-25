@@ -4,6 +4,15 @@ const WORK_START_TIME = "08:30:00";
 const WORK_END_TIME = "17:30:00";
 const OtModel = {
   async AllEmployee(empId) {
+    // 1. สร้างเงื่อนไข JOIN พื้นฐาน
+    let joinCondition = "e.emp_id = v.emp_id";
+
+    // ✅ LOGIC ใหม่: ถ้าเป็นการเรียกดูทั้งหมด (HR ดูหน้าอนุมัติ) ให้ซ่อน Status 0
+    // แต่ถ้ามี empId (พนักงานดูหน้า Time Attendance) ให้โชว์ Status 0 ได้
+    if (!empId) {
+      joinCondition += " AND v.req_status != '0'";
+    }
+
     let sql = `
     SELECT 
         e.id AS employee_id,
@@ -14,29 +23,37 @@ const OtModel = {
         e.total_hour AS total_ot_hour_summary,
         v.ot_id,
         v.request_id,
-        v.doc_no,       /* <--- เพิ่มบรรทัดนี้ */
+        v.doc_no,
         v.description,
         v.total AS ot_duration,
         v.start_time,
         v.end_time,
         v.created_at,
-        v.ot_status
+        v.req_status
     FROM view_employee e
-    LEFT JOIN view_emp_ot v ON e.emp_id = v.emp_id
+    /* ✅ ใช้ตัวแปร joinCondition ที่เราสร้างแบบ Dynamic */
+    LEFT JOIN view_emp_ot v ON ${joinCondition}
     `;
 
     const params = [];
 
-    // ตอนนี้รู้จัก empId แล้ว โค้ดนี้จะทำงานได้
     if (empId) {
       sql += ` WHERE e.emp_id = ? `;
       params.push(empId);
     }
 
     sql += ` ORDER BY e.id ASC, v.created_at DESC`;
-
     const [flatRows] = await db.query(sql, params);
     return this.groupEmployeeData(flatRows);
+  },
+
+  async updateRequestStatus(requestId, status, description = null) {
+    // อัปเดตสถานะ และวันที่แก้ไขล่าสุด (ถ้ามี field updated_at)
+    let sql = `UPDATE request SET sts = ? WHERE id = ?`;
+    let params = [status, requestId];
+
+    const [result] = await db.query(sql, params);
+    return result.affectedRows > 0;
   },
 
   generateNextDocNo(lastDocNo) {
@@ -155,8 +172,10 @@ const OtModel = {
   },
 
   async findById(id) {
+    console.log(`Checking DB for OT ID: ${id}`); // <--- เพิ่มบรรทัดนี้
     const sql = `SELECT * FROM ot WHERE id = ?`;
     const [rows] = await db.query(sql, [id]);
+    console.log("Result:", rows); // <--- เพิ่มบรรทัดนี้
     return rows[0] || null;
   },
   // function group
@@ -196,7 +215,7 @@ const OtModel = {
           start_time: row.start_time,
           end_time: row.end_time,
           created_at: row.created_at,
-          ot_status: row.ot_status,
+          sts: row.req_status,
         };
 
         currentEmployee.ot_requests.push(otRequestDetail);
@@ -209,18 +228,19 @@ const OtModel = {
 
   // หน้า 1
   async requestOt() {
-    // เลือกจาก View แทน
     const sql = `
       SELECT 
         ot_id AS id, 
         request_id, 
-        doc_no,            /* มี field นี้ใน View แล้ว */
+        doc_no,
         description, 
         start_time, 
         end_time, 
         total, 
-        ot_status AS sts 
+        req_status AS sts
       FROM view_emp_ot 
+      /* ✅ เพิ่ม WHERE เพื่อกรอง Draft ออก */
+      WHERE req_status != '0'
       ORDER BY ot_id ASC
     `;
     const [rows] = await db.query(sql);
@@ -251,7 +271,7 @@ const OtModel = {
       data.doc_no,
       data.title,
       data.type,
-      "1",
+      data.sts,
       data.created_by,
     ]);
 
@@ -260,8 +280,8 @@ const OtModel = {
 
   async create(data) {
     const sql = `
-      INSERT INTO ot (request_id, start_time, end_time, description, emp_id, total, sts, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO ot (request_id, start_time, end_time, description, emp_id, total, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -271,7 +291,6 @@ const OtModel = {
       data.description || null,
       data.emp_id,
       data.total || 0,
-      data.ot_status || 1, // 1=Pending, 2=Approved, 3=Rejected, 4=Cancelled
       data.created_by,
     ];
 
@@ -282,7 +301,7 @@ const OtModel = {
   async update(id, data) {
     const sql = `
       UPDATE ot
-      SET start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, sts = ?, created_by = ?
+      SET start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, created_by = ?
       WHERE id = ?
     `;
 
@@ -292,7 +311,6 @@ const OtModel = {
       data.description || null,
       data.emp_id,
       data.total || 0,
-      data.sts || 1, // 1=Pending, 2=Approved, 3=Rejected, 4=Cancelled
       data.created_by,
       id,
     ];

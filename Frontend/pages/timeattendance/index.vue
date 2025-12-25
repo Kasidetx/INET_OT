@@ -59,6 +59,16 @@
 
         <v-spacer></v-spacer>
 
+        <v-btn color="success" outlined class="mr-2" @click="simulateSwipeCard" style="
+      height:46px;
+      padding:0 24px;
+      text-transform:none;
+      font-size:15px;
+    ">
+          <v-icon left>mdi-card-account-details-outline</v-icon>
+          จำลองรูดบัตร
+        </v-btn>
+
         <v-col cols="auto">
           <v-btn outlined color="primary" @click="addOvertimeRequest" style="
               height:46px;
@@ -216,24 +226,28 @@ export default {
             if (Array.isArray(emp.ot_requests) && emp.ot_requests.length > 0) {
 
               emp.ot_requests.forEach(req => {
-                flattenedEntries.push({
-                  // --- ส่วนข้อมูลหลักที่ใช้แสดงผล ---
-                  date: req.created_at,     // วันที่ (เช่น 24/12/2568)
-                  checkIn: req.start_time,  // เวลาเข้า (เช่น 08:30 น.)
-                  checkOut: req.end_time,   // เวลาออก (เช่น 17:30 น.)
-                  status: req.ot_status,    // สถานะ (เช่น รออนุมัติ)
-                  description: req.description || "-",        // รายละเอียด
+                const status = Number(req.sts);
+                if (status === 0) {
+                  flattenedEntries.push({
+                    // --- ส่วนข้อมูลหลักที่ใช้แสดงผล ---
+                    date: req.created_at,     // วันที่ (เช่น 24/12/2568)
+                    checkIn: req.start_time,  // เวลาเข้า (เช่น 08:30 น.)
+                    checkOut: req.end_time,   // เวลาออก (เช่น 17:30 น.)
+                    status: req.sts,    // สถานะ (เช่น รออนุมัติ)
+                    description: req.description || "-",        // รายละเอียด
 
+                    // --- ส่วนที่ต้องใช้สำหรับ Logic (Checkbox, Edit, Status) ---
+                    id: req.ot_id,                 // ID ของรายการ OT
+                    request_id: req.request_id,
+                    emp_id: this.mockEmpId,
+                    selected: false,      // จำเป็นสำหรับ Checkbox เลือกรายการ
 
-                  // --- ส่วนที่ต้องใช้สำหรับ Logic (Checkbox, Edit, Status) ---
-                  id: req.id,                 // ID ของรายการ OT
-                  request_id: req.request_id,
-                  emp_id: this.mockEmpId,
-                  selected: false,      // จำเป็นสำหรับ Checkbox เลือกรายการ
-                });
+                  });
+                }
               });
             }
           });
+          console.log("Flattened Entries:", flattenedEntries);
 
           // 3. อัปเดตเข้าตัวแปรตาราง
           this.timeEntries = flattenedEntries;
@@ -259,10 +273,76 @@ export default {
       }
     },
 
-    submitRequest() {
-      // logic submit จริงค่อยมาใส่ทีหลัง
-      const selected = this.timeEntries.filter((e) => e.selected);
-      console.log("Submit request", selected);
+    async simulateSwipeCard() {
+      try {
+        const now = new Date();
+        const endTime = new Date(now.getTime() + 9 * 60 * 60 * 1000); // สมมติว่าเลิกงานอีก 9 ชม.
+
+        const payload = {
+          emp_id: this.mockEmpId,
+          created_by: this.mockEmpId,
+          start_time: this.formatToMySQL(now),
+          end_time: this.formatToMySQL(endTime),
+          description: "ลงเวลาเข้างาน (จำลองการรูดบัตร)",
+          type: 1, // ประเภทงานปกติ (สมมติ ID=1)
+
+          // 🔥 สำคัญ: ส่งสถานะ 0 เพื่อให้เป็น Draft
+          sts: 0
+        };
+
+        // ยิง API สร้างรายการ
+        const response = await api.post('/api/ot', payload);
+
+        if (response.data && response.data.success) {
+          // โหลดข้อมูลใหม่ (รายการนี้จะโชว์ขึ้นมาเพราะสถานะเป็น 0)
+          this.fetchTimeEntries();
+          // alert("รูดบัตรสำเร็จ (Draft)");
+        }
+
+      } catch (err) {
+        console.error("Simulation Error:", err);
+        alert("เกิดข้อผิดพลาดในการจำลองรูดบัตร");
+      }
+    },
+
+    formatToMySQL(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      const ss = String(date.getSeconds()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+    },
+
+    async submitRequest() {
+      // กรองเอาเฉพาะรายการที่เลือก
+      const selectedItems = this.timeEntries.filter((e) => e.selected);
+
+      if (selectedItems.length === 0) {
+        alert("กรุณาเลือกรายการที่ต้องการส่งคำขอ");
+        return;
+      }
+
+      try {
+        // ยิง API ไปที่ Backend เพื่อคำนวณและเปลี่ยนสถานะ
+        const res = await api.post("/api/ot/submit", {
+          items: selectedItems.map(item => ({
+            id: item.id, // ot_id
+          }))
+        });
+        console.log("Submit Response:", res);
+
+        if (res.data.success) {
+          // ปิด Dialog ยืนยัน
+          this.dialogConfirm = false;
+          // รีโหลดข้อมูลใหม่
+          await this.fetchTimeEntries();
+        }
+      } catch (err) {
+        console.error("Submit Error:", err);
+        alert("เกิดข้อผิดพลาดในการส่งคำขอ");
+      }
     },
     addOvertimeRequest() {
       this.overtimeMode = "create";

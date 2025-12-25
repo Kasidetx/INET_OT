@@ -1,20 +1,17 @@
 // src/models/otDetail.model.js
-import db from '../config/db.js';
+import db from "../config/db.js";
 
 const OtDetailModel = {
-
   // ดึงรายการ detail ทั้งหมด
   async findAll() {
-    const [rows] = await db.query(
-      'SELECT * FROM ot_detail ORDER BY id ASC'
-    );
+    const [rows] = await db.query("SELECT * FROM ot_detail ORDER BY id ASC");
     return rows;
   },
 
   // ดึงรายการ detail ทั้งหมดของ OT ใบหนึ่ง
   async findByOtId(otId) {
     const [rows] = await db.query(
-      'SELECT * FROM ot_detail WHERE ot_id = ? ORDER BY id ASC',
+      "SELECT * FROM ot_detail WHERE ot_id = ? ORDER BY id ASC",
       [otId]
     );
     return rows;
@@ -26,13 +23,13 @@ const OtDetailModel = {
       INSERT INTO ot_detail (ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate)
       VALUES (?, ?, ?, ?, ?)
     `;
-    
+
     const values = [
       otId,
       detail.ot_start_time,
       detail.ot_end_time,
       detail.ot_hour,
-      detail.ot_rate
+      detail.ot_rate,
     ];
 
     const [result] = await db.query(sql, values);
@@ -45,17 +42,17 @@ const OtDetailModel = {
       INSERT INTO ot_detail (ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate)
       VALUES ?
     `;
-    const values = details.map(d => [
+    const values = details.map((d) => [
       otId,
       d.ot_start_time,
       d.ot_end_time,
       d.ot_hour,
-      d.ot_rate
+      d.ot_rate,
     ]);
 
     const [result] = await db.query(sql, [values]);
     return result;
-  }
+  },
 };
 
 export default OtDetailModel;

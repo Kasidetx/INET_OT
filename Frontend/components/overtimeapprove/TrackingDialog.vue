@@ -129,18 +129,18 @@ export default {
             if (!this.item) return "-";
             return this.item.docNo || "-";
         },
-        
+
         totalHours() {
             return this.item?.hours || "-"
         },
-        
+
         transDate() {
             return this.item?.transDate || "-"
         },
 
         showStep2() {
-            // ถ้าสถานะเป็น 1 (รอหัวหน้า) หรือ 5 (หัวหน้าไม่อนุมัติ) -> ยังไม่ถึง HR
-            return ![1, 5].includes(this.statusId)
+            // ถ้าสถานะเป็น 1 (รอหัวหน้า) หรือ 4 (หัวหน้าไม่อนุมัติ) -> ยังไม่ถึง HR
+            return ![1, 4].includes(this.statusId)
         },
 
         // Chip สถานะด้านบนสุด
@@ -150,8 +150,8 @@ export default {
                 1: { label: "รอหัวหน้าอนุมัติ", color: "#FFE8C2", textColor: "#B45309" },
                 2: { label: "รอ HR อนุมัติ", color: "#FEF3C7", textColor: "#B45309" },
                 3: { label: "อนุมัติแล้ว", color: "#DCFCE7", textColor: "#166534" },
-                4: { label: "HR ไม่อนุมัติ", color: "#FEE2E2", textColor: "#991B1B" },
-                5: { label: "หัวหน้าไม่อนุมัติ", color: "#FEE2E2", textColor: "#991B1B" },
+                4: { label: "หัวหน้าไม่อนุมัติ", color: "#FEE2E2", textColor: "#991B1B" },
+                5: { label: "HR ไม่อนุมัติ", color: "#FEE2E2", textColor: "#991B1B" },
                 6: { label: "ยกเลิก", color: "#E5E7EB", textColor: "#374151" }
             }
             return map[s] || { label: "-", color: "#E5E7EB", textColor: "#374151" }
@@ -161,8 +161,8 @@ export default {
         step1() {
             const s = this.statusId
             if (s === 1) return this.makeStep("pending")   // กำลังรอ
-            if (s === 2 || s === 3 || s === 4) return this.makeStep("approved") // ผ่านแล้ว (ส่งต่อให้ HR หรือจบแล้ว)
-            if (s === 5) return this.makeStep("rejected")  // ตกม้าตายตรงนี้
+            if (s === 2 || s === 3 || s === 5) return this.makeStep("approved") // ผ่านแล้ว (ส่งต่อให้ HR หรือจบแล้ว)
+            if (s === 4) return this.makeStep("rejected")  // ตกม้าตายตรงนี้
             if (s === 6) return this.makeStep("cancelled")
             return this.makeStep("waiting")
         },
@@ -172,7 +172,7 @@ export default {
             const s = this.statusId
             if (s === 2) return this.makeStep("pending")   // ถึงคิว HR แล้ว
             if (s === 3) return this.makeStep("approved")  // HR อนุมัติแล้ว
-            if (s === 4) return this.makeStep("rejected")  // HR ไม่อนุมัติ
+            if (s === 5) return this.makeStep("rejected")  // HR ไม่อนุมัติ
             if (s === 6) return this.makeStep("cancelled")
             return this.makeStep("waiting") // ยังไม่ถึงคิว
         },
@@ -223,9 +223,28 @@ export default {
     font-size: 12px;
 }
 
-.dot-wait { background: #F3F4F6; color: #9CA3AF; }
-.dot-pending { background: #FFE8C2; color: #B45309; }
-.dot-approved { background: #DCFCE7; color: #166534; }
-.dot-rejected { background: #FEE2E2; color: #991B1B; }
-.dot-cancelled { background: #E5E7EB; color: #374151; }
+.dot-wait {
+    background: #F3F4F6;
+    color: #9CA3AF;
+}
+
+.dot-pending {
+    background: #FFE8C2;
+    color: #B45309;
+}
+
+.dot-approved {
+    background: #DCFCE7;
+    color: #166534;
+}
+
+.dot-rejected {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.dot-cancelled {
+    background: #E5E7EB;
+    color: #374151;
+}
 </style>

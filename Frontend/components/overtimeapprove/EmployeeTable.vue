@@ -12,41 +12,21 @@
           </span>
         </transition>
 
-        <v-btn
-          depressed outlined
-          class="rounded-lg px-6 mr-3 font-weight-bold"
-          height="40"
-          :disabled="value.length === 0"
-          :color="value.length > 0 ? 'error' : 'grey darken-1'"
-          @click="$emit('reject')"
-        >
+        <v-btn depressed outlined class="rounded-lg px-6 mr-3 font-weight-bold" height="40"
+          :disabled="value.length === 0" :color="value.length > 0 ? 'error' : 'grey darken-1'" @click="$emit('reject')">
           ไม่อนุมัติ
         </v-btn>
 
-        <v-btn
-          depressed
-          class="rounded-lg px-6 font-weight-bold white--text"
-          height="40"
-          :disabled="value.length === 0"
-          :class="value.length > 0 ? 'success' : 'grey lighten-1'"
-          @click="$emit('approve')"
-        >
+        <v-btn v-if="showApprove" depressed class="rounded-lg px-6 font-weight-bold white--text" height="40"
+          :disabled="value.length === 0" :class="value.length > 0 ? 'success' : 'grey lighten-1'"
+          @click="$emit('approve')">
           อนุมัติ
         </v-btn>
       </div>
     </div>
 
-    <v-data-table
-      :headers="headers"
-      :items="items"
-      :expanded.sync="expanded"
-      show-expand
-      item-key="id"
-      class="elevation-0 rounded-0 custom-table"
-      hide-default-footer
-      :loading="loading"
-      :items-per-page="-1"
-    >
+    <v-data-table :headers="headers" :items="items" :expanded.sync="expanded" show-expand item-key="id"
+      class="elevation-0 rounded-0 custom-table" hide-default-footer :loading="loading" :items-per-page="-1">
       <template v-slot:item.data-table-expand="{ expand, isExpanded }">
         <v-btn icon small @click="expand(!isExpanded)">
           <v-icon :color="isExpanded ? 'primary' : 'grey'">
@@ -61,14 +41,9 @@
 
       <template v-slot:expanded-item="{ headers, item }">
         <td :colspan="headers.length" class="pa-0 white">
-          
-          <RequestSubTable
-            :items="item.requests" 
-            :selectable="isSelectable"
-            :itemKey="'otId'" 
-            :selected.sync="selectedRequestsByEmp[item.id]"
-            @view="onView"
-          />
+
+          <RequestSubTable :items="item.requests" :selectable="isSelectable" :itemKey="'otId'"
+            :selected.sync="selectedRequestsByEmp[item.id]" @view="onView" />
 
         </td>
       </template>
@@ -87,7 +62,8 @@ export default {
     totalItems: { type: Number, default: 0 },
     loading: Boolean,
     value: { type: Array, default: () => [] }, // v-model
-    isSelectable: { type: Boolean, default: false } 
+    isSelectable: { type: Boolean, default: false },
+    showApprove: { type: Boolean, default: true }
   },
   data() {
     return {
@@ -144,13 +120,28 @@ export default {
 </script>
 
 <style>
-.custom-table.v-data-table { border: 1px solid #E0E0E0; }
+.custom-table.v-data-table {
+  border: 1px solid #E0E0E0;
+}
+
 .custom-table .v-data-table-header th {
   background: #EEEEEE !important;
   color: #424242 !important;
   font-weight: 700 !important;
 }
-.success { background:#4CAF50 !important; border-color:#4CAF50 !important; }
-.fade-enter-active, .fade-leave-active { transition: opacity .3s; }
-.fade-enter, .fade-leave-to { opacity: 0; }
+
+.success {
+  background: #4CAF50 !important;
+  border-color: #4CAF50 !important;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity .3s;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>

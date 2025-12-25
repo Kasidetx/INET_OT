@@ -12,16 +12,17 @@
       </v-card-title>
 
       <v-card-text :style="styles.body">
-        <div style="background-color: #fff3e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed orange;">
-            <div style="color: orange; font-weight: bold; font-size: 12px; margin-bottom: 5px;">
-                🔧 DEV MODE: ข้อมูลพนักงาน
-            </div>
-            <v-row dense>
-                <v-col cols="12">
-                    <span outlined dense hide-details font-weight=700 font-size=16px>รหัสพนักงาน: {{ emp_id }}</span>
-                    <span outlined dense hide-details font-weight=700 font-size=16px>request_id: {{ request_id }}</span>
-                </v-col>
-            </v-row>
+        <div
+          style="background-color: #fff3e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed orange;">
+          <div style="color: orange; font-weight: bold; font-size: 12px; margin-bottom: 5px;">
+            🔧 DEV MODE: ข้อมูลพนักงาน
+          </div>
+          <v-row dense>
+            <v-col cols="12">
+              <span outlined dense hide-details font-weight=700 font-size=16px>รหัสพนักงาน: {{ emp_id }}</span>
+              <span outlined dense hide-details font-weight=700 font-size=16px>id: {{ id }}</span>
+            </v-col>
+          </v-row>
         </div>
 
         <v-row class="mb-4" no-gutters align="center">
@@ -70,8 +71,7 @@
           </v-btn>
         </v-row>
         <v-row no-gutters justify="start">
-          <v-btn min-width="100px" rounded color="#0863B6" class="white--text" @click="submit"
-            :loading="saving">
+          <v-btn min-width="100px" rounded color="#0863B6" class="white--text" @click="submit" :loading="saving">
             {{ saveButtonText }}
           </v-btn>
         </v-row>
@@ -239,27 +239,25 @@ export default {
     fillFromItem(item) {
       this.resetForm();
       if (!item) return;
-
       this.id = item.id ?? null;
       this.description = item.description || "";
-      
-      // ✅ แก้จุดที่ 1: ดึง Request ID มาด้วย
       this.request_id = item.request_id || null;
 
-      // ✅ แก้จุดที่ 3: ดึง Type
       if (item.type) this.selectedType = item.type;
 
       // จัดการเวลา
       if (item.checkIn) {
         const d1 = new Date(item.checkIn);
         this.checkInDate = this.toLocalYMD(d1);
-        this.checkInTime = this.toHHmm(d1) + " น.";
+
+        this.checkInTime = this.toHHmm(d1);
       }
 
       if (item.checkOut) {
         const d2 = new Date(item.checkOut);
         this.checkOutDate = this.toLocalYMD(d2);
-        this.checkOutTime = this.toHHmm(d2) + " น.";
+
+        this.checkOutTime = this.toHHmm(d2);
       }
     },
     resetForm() {
@@ -270,9 +268,9 @@ export default {
       this.checkOutTime = null;
       this.description = "";
       this.request_id = null;
-      
+
       // ✅ กำหนดค่า emp_id จาก Props (ถ้ามีส่งมา)
-      this.emp_id = this.empId; 
+      this.emp_id = this.empId;
 
       this.pickerTarget = null;
       this.selectedDate = null;
@@ -343,13 +341,15 @@ export default {
         id: this.id,
         // ✅ แก้จุดที่ 4: ส่ง request_id กลับไปด้วย (เพื่อให้ Backend รู้ว่าเป็นกลุ่มเดิม)
         request_id: this.request_id,
-        
+
         start_time: this.checkInDate && this.checkInTime ? `${this.checkInDate} ${this.checkInTime}:00` : null,
         end_time: this.checkOutDate && this.checkOutTime ? `${this.checkOutDate} ${this.checkOutTime}:00` : null,
         description: this.description || "",
-        emp_id: this.emp_id, 
+        emp_id: this.emp_id,
         created_by: this.emp_id,
-        type: this.selectedType
+        type: this.selectedType,
+
+        sts: 1,  // ✅ กำหนดสถานะเป็น "รอหัวหน้าอนุมัติ" เสมอ
       };
 
       if (!payload.start_time || !payload.end_time) return;
