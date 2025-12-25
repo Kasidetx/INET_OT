@@ -1,7 +1,6 @@
 <template>
     <v-dialog v-model="visible" max-width="640" persistent>
         <v-card class="rounded-xl" style="overflow:hidden;">
-            <!-- Header -->
             <div class="d-flex align-center justify-space-between px-6 py-4" style="background:#E3F2FD;">
                 <div class="d-flex align-center">
                     <v-icon color="#1565C0" class="mr-2">mdi-clipboard-text-outline</v-icon>
@@ -18,12 +17,11 @@
                 </v-btn>
             </div>
 
-            <!-- Content -->
             <v-card-text class="px-8 pt-6 pb-2">
                 <div class="text-h6 font-weight-bold mb-4">ข้อมูลเอกสาร</div>
 
                 <div class="d-flex align-center mb-3">
-                    <div class="grey--text text--darken-1" style="min-width:120px;">สถานะ</div>
+                    <div class="grey--text text--darken-1" style="min-width:140px;">สถานะ</div>
                     <div class="mr-3">:</div>
                     <v-chip small :color="statusChip.color" :text-color="statusChip.textColor" class="font-weight-bold">
                         {{ statusChip.label }}
@@ -31,28 +29,26 @@
                 </div>
 
                 <div class="d-flex align-center mb-3">
-                    <div class="grey--text text--darken-1" style="min-width:120px;">หมายเลขเอกสาร</div>
+                    <div class="grey--text text--darken-1" style="min-width:140px;">หมายเลขเอกสาร</div>
                     <div class="mr-3">:</div>
                     <div class="font-weight-bold">{{ docNo }}</div>
                 </div>
 
                 <div class="d-flex align-center mb-3">
-                    <div class="grey--text text--darken-1" style="min-width:120px;">จำนวนชั่วโมงทั้งหมด</div>
+                    <div class="grey--text text--darken-1" style="min-width:140px;">จำนวนชั่วโมงทั้งหมด</div>
                     <div class="mr-3">:</div>
                     <div class="font-weight-bold">{{ totalHours }}</div>
                 </div>
 
                 <div class="d-flex align-center mb-6">
-                    <div class="grey--text text--darken-1" style="min-width:120px;">วันที่ทำรายการ</div>
+                    <div class="grey--text text--darken-1" style="min-width:140px;">วันที่ทำรายการ</div>
                     <div class="mr-3">:</div>
                     <div class="font-weight-bold">{{ transDate }}</div>
                 </div>
 
-                <!-- Steps (เหมือนอันซ้าย) -->
                 <div class="text-subtitle-1 font-weight-bold mb-3">ลำดับการอนุมัติ</div>
 
                 <div class="rounded-lg pa-4" style="border:1px solid #ECECEC; background:#FAFAFA;">
-                    <!-- Step 1 -->
                     <div class="d-flex align-center">
                         <div class="step-dot mr-4" :class="step1.dotClass">1</div>
                         <div class="flex-grow-1">
@@ -73,7 +69,6 @@
 
                     <v-divider class="my-4"></v-divider>
 
-                    <!-- Step 2 -->
                     <div v-if="showStep2" class="d-flex align-center">
                         <div class="step-dot mr-4" :class="step2.dotClass">2</div>
                         <div class="flex-grow-1">
@@ -95,7 +90,6 @@
 
             </v-card-text>
 
-            <!-- Footer -->
             <v-card-actions class="justify-center pb-6">
                 <v-btn color="#1565C0" class="white--text px-10 rounded-lg" height="44" @click="close">
                     ปิด
@@ -110,7 +104,7 @@ export default {
     name: "TrackingDialog",
     props: {
         value: { type: Boolean, default: false },
-        item: { type: Object, default: null }, // OT item ที่กดจากลูกตา
+        item: { type: Object, default: null },
     },
     computed: {
         visible: {
@@ -118,42 +112,38 @@ export default {
             set(v) { this.$emit("input", v) }
         },
 
-        // mock ชื่อ (แก้ได้ตามที่ต้องการ)
+        // Mock Data (สามารถเปลี่ยนไปดึงจาก item ได้ถ้ามีข้อมูล)
         mockHead() {
-            return {
-                title: "หัวหน้า: Dear",
-                name: "Dear"
-            }
+            return { title: "หัวหน้า", name: "Dear" }
         },
         mockHr() {
-            return {
-                title: "HR: Optra",
-                name: "Optra"
-            }
+            return { title: "HR", name: "Optra" }
         },
 
         statusId() {
-            // ใช้ field เดิมของคุณ: item.status คือเลข 1-6
-            return Number(this.item?.status ?? 0)
+            return Number(this.item?.status || 0)
         },
 
-        // ข้อมูลบน dialog
+        // ✅ แก้ไข: รองรับชื่อตัวแปรที่หลากหลาย (reqNo, doc_no, docs_no)
         docNo() {
-            return this.item?.reqNo || "-"
+            if (!this.item) return "-";
+            return this.item.docNo || "-";
         },
+        
         totalHours() {
-            // item.hours เป็น "9 ชั่วโมง" อยู่แล้ว
             return this.item?.hours || "-"
         },
+        
         transDate() {
             return this.item?.transDate || "-"
         },
+
         showStep2() {
-            //  ถ้า status = 1 (รอหัวหน้าอนุมัติ) → ไม่ต้องโชว์ HR
+            // ถ้าสถานะเป็น 1 (รอหัวหน้า) หรือ 5 (หัวหน้าไม่อนุมัติ) -> ยังไม่ถึง HR
             return ![1, 5].includes(this.statusId)
         },
 
-        // chip สถานะรวม (บนสุด)
+        // Chip สถานะด้านบนสุด
         statusChip() {
             const s = this.statusId
             const map = {
@@ -167,26 +157,24 @@ export default {
             return map[s] || { label: "-", color: "#E5E7EB", textColor: "#374151" }
         },
 
-        // ทำให้ “ลำดับ” เหมือนอันซ้าย
+        // Logic สถานะสำหรับ Step 1 (หัวหน้า)
         step1() {
             const s = this.statusId
-            // Step1 = หัวหน้า
-            if (s === 1) return this.makeStep("pending")
-            if (s === 2) return this.makeStep("approved")
-            if (s === 3) return this.makeStep("approved")
-            if (s === 4) return this.makeStep("approved")
-            if (s === 5) return this.makeStep("rejected")
+            if (s === 1) return this.makeStep("pending")   // กำลังรอ
+            if (s === 2 || s === 3 || s === 4) return this.makeStep("approved") // ผ่านแล้ว (ส่งต่อให้ HR หรือจบแล้ว)
+            if (s === 5) return this.makeStep("rejected")  // ตกม้าตายตรงนี้
             if (s === 6) return this.makeStep("cancelled")
             return this.makeStep("waiting")
         },
+
+        // Logic สถานะสำหรับ Step 2 (HR)
         step2() {
             const s = this.statusId
-            // Step2 = HR
-            if (s === 2) return this.makeStep("pending")
-            if (s === 3) return this.makeStep("approved")
-            if (s === 4) return this.makeStep("rejected")
+            if (s === 2) return this.makeStep("pending")   // ถึงคิว HR แล้ว
+            if (s === 3) return this.makeStep("approved")  // HR อนุมัติแล้ว
+            if (s === 4) return this.makeStep("rejected")  // HR ไม่อนุมัติ
             if (s === 6) return this.makeStep("cancelled")
-            return this.makeStep("waiting")
+            return this.makeStep("waiting") // ยังไม่ถึงคิว
         },
     },
     methods: {
@@ -198,7 +186,7 @@ export default {
             const cfg = {
                 waiting: {
                     dotClass: "dot-wait",
-                    chip: { label: "รออนุมัติ", color: "#FFE8C2", textColor: "#B45309" }
+                    chip: { label: "รออนุมัติ", color: "#F3F4F6", textColor: "#9CA3AF" }
                 },
                 pending: {
                     dotClass: "dot-pending",
@@ -235,24 +223,9 @@ export default {
     font-size: 12px;
 }
 
-.dot-wait,
-.dot-pending {
-    background: #E0E7FF;
-    color: #1D4ED8;
-}
-
-.dot-approved {
-    background: #DBEAFE;
-    color: #1D4ED8;
-}
-
-.dot-rejected {
-    background: #FEE2E2;
-    color: #B91C1C;
-}
-
-.dot-cancelled {
-    background: #E5E7EB;
-    color: #374151;
-}
+.dot-wait { background: #F3F4F6; color: #9CA3AF; }
+.dot-pending { background: #FFE8C2; color: #B45309; }
+.dot-approved { background: #DCFCE7; color: #166534; }
+.dot-rejected { background: #FEE2E2; color: #991B1B; }
+.dot-cancelled { background: #E5E7EB; color: #374151; }
 </style>

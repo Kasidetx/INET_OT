@@ -308,7 +308,8 @@ export default {
             return {
               id: idx + 1,
               otId: ot.ot_id || ot.id || ot.otId,
-              reqNo: ot.doc_no || "-",
+              requestId: ot.request_id,
+              docNo: ot.doc_no || "-",
               transDate: this.formatDateTime(ot.created_at || ot.start_time, 'date'),
               start: `${this.formatDateTime(ot.start_time, 'date')} ${this.formatDateTime(ot.start_time, 'time')}`,
               end: `${this.formatDateTime(ot.end_time, 'date')} ${this.formatDateTime(ot.end_time, 'time')}`,

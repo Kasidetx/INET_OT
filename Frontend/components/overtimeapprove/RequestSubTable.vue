@@ -1,7 +1,19 @@
 <template>
   <div class="pa-0" style="border-top: 1px solid #eee;">
-    <v-data-table :headers="headers" :items="items" :item-key="itemKey" :show-select="selectable"
-      v-model="localSelected" hide-default-footer class="elevation-0 transparent-table" dense>
+    <v-data-table 
+      :headers="headers" 
+      :items="items" 
+      :item-key="itemKey" 
+      :show-select="selectable"
+      v-model="modelProxy" 
+      hide-default-footer 
+      class="elevation-0 transparent-table" 
+      dense
+    >
+      <template v-slot:item.requestId="{ item }">
+        <span class="font-weight-bold grey--text text--darken-2">{{ item.requestId }}</span>
+      </template>
+
       <template v-slot:item.detail="{ item }">
         <div class="py-3">
           <div class="font-weight-bold text-body-2 mb-1">{{ item.detailTitle }}</div>
@@ -13,17 +25,11 @@
         <Status :value="item.status" />
       </template>
 
-   <template v-slot:item.action="{ item }">
-  <v-btn icon small outlined color="grey lighten-1"
-    style="border-color:#E0E0E0;"
-    @click="$emit('view', item)"
-  >
-    <v-icon color="primary" small>mdi-eye-outline</v-icon>
-  </v-btn>
-</template>
-
-
-
+      <template v-slot:item.action="{ item }">
+        <v-btn icon small outlined color="grey lighten-1" style="border-color:#E0E0E0;" @click="$emit('view', item)">
+          <v-icon color="primary" small>mdi-eye-outline</v-icon>
+        </v-btn>
+      </template>
     </v-data-table>
   </div>
 </template>
@@ -37,21 +43,23 @@ export default {
   props: {
     items: { type: Array, default: () => [] },
     selected: { type: Array, default: () => [] },
-    itemKey: { type: String, default: "reqNo" },
+    itemKey: { type: String, default: "reqNo" }, // ค่า default (แต่เราส่ง otId มาทับแล้ว)
     selectable: { type: Boolean, default: false }
   },
-  data() {
-    return {
-      localSelected: [],
-      // ❌ ลบ headers ออกจากตรงนี้
-    };
-  },
   computed: {
-    // ✅ [แก้ไข] สร้าง headers ใน computed แทน
+    // ✅ ใช้ Computed แทน Data/Watch เพื่อความแม่นยำในการ Sync ข้อมูล
+    modelProxy: {
+      get() {
+        return this.selected;
+      },
+      set(val) {
+        this.$emit("update:selected", val);
+      }
+    },
     headers() {
       const h = [
-        { text: "ลำดับ", value: "id", align: "center", sortable: false, class: "caption", width: "60px" },
-        { text: "หมายเลขคำร้อง", value: "reqNo", sortable: false, class: "caption" },
+        { text: "ลำดับ", value: "requestId", align: "center", sortable: false, class: "caption", width: "80px" },
+        { text: "หมายเลขคำร้อง", value: "docNo", sortable: false, class: "caption" },
         { text: "รายละเอียด", value: "detail", sortable: false, class: "caption" },
         { text: "จำนวนชั่วโมง", value: "hours", align: "center", sortable: false, class: "caption" },
         { text: "วัน-เวลาที่เริ่ม", value: "start", sortable: false, class: "caption" },
@@ -61,29 +69,14 @@ export default {
         { text: "", value: "action", align: "center", sortable: false }
       ];
 
-      // ใส่ logic: ถ้า selectable = true ให้เพิ่มคอลัมน์ checkbox
       if (this.selectable) {
         h.unshift({ text: "", value: "data-table-select", sortable: false, width: 48 });
       }
 
       return h;
     }
-  },
-  watch: {
-    selected: {
-      immediate: true,
-      deep: true,
-      handler(val) {
-        this.localSelected = Array.isArray(val) ? val : [];
-      }
-    },
-    localSelected: {
-      deep: true,
-      handler(val) {
-        this.$emit("update:selected", val);
-      }
-    }
   }
+  // ❌ ลบ watch และ data เดิมออกได้เลยครับ เพื่อไม่ให้ตีกัน
 };
 </script>
 

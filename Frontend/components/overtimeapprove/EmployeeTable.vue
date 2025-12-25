@@ -61,13 +61,14 @@
 
       <template v-slot:expanded-item="{ headers, item }">
         <td :colspan="headers.length" class="pa-0 white">
-        <RequestSubTable
-  :items="item.requests"
-  :selectable="isSelectable"
-  :itemKey="'reqNo'"
-  :selected.sync="selectedRequestsByEmp[item.id]"
-  @view="$emit('view', $event)"
-/>
+          
+          <RequestSubTable
+            :items="item.requests" 
+            :selectable="isSelectable"
+            :itemKey="'otId'" 
+            :selected.sync="selectedRequestsByEmp[item.id]"
+            @view="onView"
+          />
 
         </td>
       </template>
@@ -85,18 +86,13 @@ export default {
     items: { type: Array, default: () => [] },
     totalItems: { type: Number, default: 0 },
     loading: Boolean,
-
-    // ✅ v-model รวม selected ทั้งหมด
-    value: { type: Array, default: () => [] },
-
-    // ✅ เปิด checkbox + ปุ่มอนุมัติ เฉพาะโหมด pending
+    value: { type: Array, default: () => [] }, // v-model
     isSelectable: { type: Boolean, default: false } 
   },
   data() {
     return {
       expanded: [],
       selectedRequestsByEmp: {},
-
       headers: [
         { text: "ลำดับ", value: "rank", align: "center", sortable: false, width: "50px" },
         { text: "รหัสพนักงาน", value: "empCode", sortable: false, class: "grey--text text--darken-2" },
@@ -110,7 +106,6 @@ export default {
     };
   },
   watch: {
-    // ✅ กัน selectedRequestsByEmp[item.id] undefined
     items: {
       immediate: true,
       deep: true,
@@ -122,36 +117,29 @@ export default {
         });
       }
     },
-
-    // ✅ รวม selected ทุก emp -> ส่งขึ้น parent เป็น v-model
     selectedRequestsByEmp: {
       deep: true,
       handler(val) {
         const all = Object.values(val).flat();
-
-        // กันซ้ำด้วย reqNo
+        // ใช้ otId เพื่อกันซ้ำแทน reqNo
         const seen = new Set();
         const unique = [];
         for (const it of all) {
-          const k = it?.reqNo;
+          const k = it?.otId; // ✅ ใช้ otId
           if (!k) continue;
           if (seen.has(k)) continue;
           seen.add(k);
           unique.push(it);
         }
-
         this.$emit("input", unique);
       }
     },
-    
   },
   methods: {
-  onView(reqItem) {
-    // ส่งขึ้นไปยังหน้า index.vue
-    this.$emit("view", reqItem)
+    onView(reqItem) {
+      this.$emit("view", reqItem)
+    }
   }
-}
-
 };
 </script>
 

@@ -103,7 +103,7 @@
             </div>
 
             <div class="pa-4 grey lighten-4 rounded-lg mb-4 custom-scroll" style="height:320px; overflow-y:auto;">
-              <v-card v-for="(it, i) in safeItems" :key="(it.otId || it.reqNo) || i"
+              <v-card v-for="(it, i) in safeItems" :key="(it.otId || it.docNo) || i"
                 class="mb-4 rounded-lg elevation-0 white pa-5">
                 <div class="font-weight-bold mb-4 text-h6 text--primary">รายการที่ {{ i + 1 }}</div>
 
@@ -111,7 +111,7 @@
                   <v-col cols="12" md="6" class="py-1">
                     <div class="info-row">
                       <span class="info-label">หมายเลขเอกสาร</span><span class="info-sep">:</span>
-                      <span class="info-value">{{ it.reqNo }}</span>
+                      <span class="info-value">{{ it.docNo }}</span>
                     </div>
                   </v-col>
                   <v-col cols="12" md="6" class="py-1">
