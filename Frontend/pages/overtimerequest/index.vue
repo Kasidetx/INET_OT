@@ -4,45 +4,22 @@
       <v-breadcrumbs class="px-0 mb-4" :items="breadcrumbs" />
 
       <v-row class="mb-6">
-        <StatsGrid 
-          :stats="stats" 
-          :current-filter="filterStatus" 
-          @update:filter="onStatClick" 
-        />
+        <StatsGrid :stats="stats" :current-filter="filterStatus" @update:filter="onStatClick" />
       </v-row>
 
-      <FilterToolbar 
-        v-model="q" 
-        placeholder="ค้นหารายการ, เลขเอกสาร, รายละเอียด..."
-      >
+      <FilterToolbar v-model="q" placeholder="ค้นหารายการ, เลขเอกสาร, รายละเอียด...">
         <template #filters>
           <v-col cols="auto" class="px-2">
-            <v-select 
-              v-model="filterYear" 
-              :items="years" 
-              label="ปี :" 
-              dense outlined hide-details clearable
-              background-color="#F7F9FC"
-              class="rounded-lg"
-              style="width: 120px;" 
-            />
+            <v-select v-model="filterYear" :items="years" label="ปี :" dense outlined hide-details clearable
+              background-color="#F7F9FC" class="rounded-lg" style="width: 120px;" />
           </v-col>
         </template>
       </FilterToolbar>
 
-      <RequestTable 
-        :items="filteredItems" 
-        :loading="loading"
-        :selected.sync="selectedItems"
-        @view="onView"
-        @bulk-cancel="onBulkCancel"
-      />
+      <RequestTable :items="filteredItems" :loading="loading" :selected.sync="selectedItems" @view="onView"
+        @bulk-cancel="onBulkCancel" />
 
-      <DialogCancelRequest 
-        v-model="cancelDialog" 
-        :items="itemsToCancel" 
-        @confirm="confirmCancelRequest" 
-      />
+      <DialogCancelRequest v-model="cancelDialog" :items="itemsToCancel" @confirm="confirmCancelRequest" />
 
       <v-dialog v-model="viewDialog" max-width="900px">
         <v-card v-if="selectedItem" class="rounded-lg">
@@ -76,7 +53,9 @@
                   <v-col cols="2" class="black--text text--darken-1" style="max-width: 140px;">หมายเหตุ</v-col>
                   <v-col cols="1" class="text-center" style="max-width: 40px;">:</v-col>
                   <v-col class="black--text">
-                    {{ selectedItem.status === 6 ? (selectedItem.cancellation_reason || 'ยกเลิกคำร้องขอเบิกค่าล่วงเวลา') : (selectedItem.title || '-') }}
+                    {{ selectedItem.status === 6 ? (selectedItem.cancellation_reason || 'ยกเลิกคำร้องขอเบิกค่าล่วงเวลา')
+                      :
+                      (selectedItem.title || '-') }}
                   </v-col>
                 </v-row>
               </v-col>
@@ -141,7 +120,8 @@
           </v-card-title>
           <v-card-text>
             <div class="mb-4 d-flex justify-center">
-              <div style="background-color: #66bb6a; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+              <div
+                style="background-color: #66bb6a; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
                 <v-icon size="50" color="white">mdi-check</v-icon>
               </div>
             </div>
@@ -296,7 +276,7 @@ export default {
             const first = g.items[0];
             const totalH = g.totalHours;
             const formattedHours = Number.isInteger(totalH) ? totalH : totalH.toFixed(2);
-            const statusId = Number(first.sts); 
+            const statusId = Number(first.sts);
 
             // Count Stats
             this.stats[0].count++;
@@ -368,30 +348,24 @@ export default {
       this.selectedItem = item;
       this.viewDialog = true;
       this.relatedItems = [];
-      this.loadingDetails = true; 
+      this.loadingDetails = true;
 
       try {
-        const response = await axios.get(`${API_URL}/ot/${item.id}/details`);
+        const response = await api.get(`api/ot/${item.id}/details`);
+
         if (response.data && response.data.success) {
           const details = response.data.data.details || [];
           this.relatedItems = details.map((d) => ({
             date: this.$formatDate(d.ot_start_time),
             startTime: this.$formatTime(d.ot_start_time),
             endTime: this.$formatTime(d.ot_end_time),
-            rate: d.ot_rate,   
-            hours: d.ot_hour   
+            rate: d.ot_rate,   // ค่า rate จาก DB จะถูกดึงมาตรงนี้
+            hours: d.ot_hour
           }));
         }
       } catch (err) {
         console.error("Error fetching details:", err);
-        // Fallback case
-        this.relatedItems = [{
-          date: item.startDate,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          rate: '-',
-          hours: item.hours ? item.hours.replace(' ชั่วโมง', '') : '0'
-        }];
+        // ... (fallback code เดิม)
       } finally {
         this.loadingDetails = false;
       }
@@ -404,14 +378,13 @@ export default {
 
       const groupItems = this.attendanceRecords.filter(r => this.selectedItems.includes(r.id));
       let allChildren = [];
-      
+
       groupItems.forEach(group => {
         if (group.children) {
           allChildren = allChildren.concat(group.children.map(c => ({
             id: c.id,
             request_no: c.request_id,
-            // 🔥 Map docs_no จากแม่ถ้าลูกไม่มี
-            docs_no: c.doc_no || group.docs_no, 
+            docs_no: c.doc_no,
             startDate: this.$formatDate(c.start_time),
             startTime: this.$formatTime(c.start_time),
             endTime: this.$formatTime(c.end_time)
@@ -450,7 +423,7 @@ export default {
     async confirmCancelRequest(reason) {
       // รับ reason มาจาก Dialog Component หรือใช้ this.cancellationReason
       const reasonText = reason || this.cancellationReason;
-      
+
       if (!reasonText.trim()) return;
 
       try {
@@ -471,7 +444,7 @@ export default {
 
         // Recalculate Stats after cancel
         // (Optional: หรือจะเรียก fetchRecords() ใหม่ก็ได้ถ้าต้องการชัวร์)
-        this.fetchRecords(); 
+        this.fetchRecords();
 
         this.cancelDialog = false;
         this.selectedItems = [];

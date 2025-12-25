@@ -30,7 +30,9 @@
                         <td class="text-center">
                             <v-checkbox v-model="localSelected" :value="item.id" hide-details class="mt-0 pt-0" />
                         </td>
-                        <td class="font-weight-bold">{{ index + 1 + (page - 1) * perPage }}</td>
+                        
+                        <td class="font-weight-bold text-center">{{ item.request_no }}</td>
+                        
                         <td class="font-weight-medium">{{ item.docs_no }}</td>
                         <td class="black--text">{{ item.title }}</td>
                         <td>
@@ -87,14 +89,15 @@ export default {
     props: {
         items: { type: Array, default: () => [] },
         loading: { type: Boolean, default: false },
-        selected: { type: Array, default: () => [] } // รับ v-model จากแม่
+        selected: { type: Array, default: () => [] }
     },
     data() {
         return {
             page: 1,
             perPage: 10,
             headers: [
-                { text: "ลำดับ", width: "50" },
+                // ปรับ class เป็น text-center เพื่อความสวยงาม
+                { text: "ลำดับ", width: "50", class: "text-center" }, 
                 { text: "หมายเลขคำร้อง" },
                 { text: "รายละเอียด" },
                 { text: "วัน-เวลาที่เริ่ม" },
@@ -106,7 +109,7 @@ export default {
         };
     },
     computed: {
-        filteredItems() { return this.items; }, // รับ items ที่กรองแล้วจากแม่
+        filteredItems() { return this.items; },
         pages() { return Math.max(1, Math.ceil(this.filteredItems.length / this.perPage)); },
         paginatedItems() {
             const start = (this.page - 1) * this.perPage;
@@ -128,16 +131,14 @@ export default {
         }
     },
     watch: {
-        items() { this.page = 1; } // เมื่อ data เปลี่ยน ให้กลับไปหน้า 1
+        items() { this.page = 1; }
     },
     methods: {
         toggleSelectAll() {
             if (this.selectAll) {
-                // Unselect all in current page
                 const newSelected = this.localSelected.filter(id => !this.paginatedItems.find(i => i.id === id));
                 this.$emit('update:selected', newSelected);
             } else {
-                // Select all in current page
                 const newSelected = [...this.localSelected];
                 this.paginatedItems.forEach(item => {
                     if (!newSelected.includes(item.id)) newSelected.push(item.id);
