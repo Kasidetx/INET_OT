@@ -1,5 +1,5 @@
 import db from "../config/db.js";
-import dayjs from 'dayjs';
+import dayjs from "dayjs";
 const WORK_START_TIME = "08:30:00";
 const WORK_END_TIME = "17:30:00";
 const OtModel = {
@@ -12,8 +12,9 @@ const OtModel = {
         e.position,
         e.request AS total_requests_count,
         e.total_hour AS total_ot_hour_summary,
-        v.id AS ot_id,
+        v.ot_id,
         v.request_id,
+        v.doc_no,       /* <--- เพิ่มบรรทัดนี้ */
         v.description,
         v.total AS ot_duration,
         v.start_time,
@@ -39,22 +40,22 @@ const OtModel = {
   },
 
   generateNextDocNo(lastDocNo) {
-    if (!lastDocNo) return 'OT-1';
-    const parts = lastDocNo.split('-');
-    if (parts.length < 2) return 'OT-1';
-    
+    if (!lastDocNo) return "OT-1";
+    const parts = lastDocNo.split("-");
+    if (parts.length < 2) return "OT-1";
+
     const numberPart = parseInt(parts[1], 10);
-    if (isNaN(numberPart)) return 'OT-1';
-    
+    if (isNaN(numberPart)) return "OT-1";
+
     return `OT-${numberPart + 1}`;
   },
 
   calculateOtDetails(startStr, endStr, typeId, allConfigs, holidayList = []) {
     const reqStart = dayjs(startStr);
     const reqEnd = dayjs(endStr);
-    
+
     if (reqEnd.isBefore(reqStart)) {
-        throw new Error('End time must be after start time');
+      throw new Error("End time must be after start time");
     }
 
     // =========================================================
@@ -62,81 +63,94 @@ const OtModel = {
     // =========================================================
     // 1. เช็คว่าเป็นเสาร์-อาทิตย์ไหม? (0=Sun, 6=Sat)
     const isWeekend = reqStart.day() === 0 || reqStart.day() === 6;
-    
+
     // 2. เช็คว่าวันที่ของ OT ตรงกับในตาราง Holiday ไหม?
     // แปลงวันที่ของ request เป็น YYYY-MM-DD เพื่อเทียบกับ list
-    const dateKey = reqStart.format('YYYY-MM-DD');
+    const dateKey = reqStart.format("YYYY-MM-DD");
     const isPublicHoliday = holidayList.includes(dateKey);
 
     // 3. ถ้าเป็น (เสาร์อาทิตย์) หรือ (ตรงกับวันหยุดนักขัตฤกษ์) => ถือเป็น HOLIDAY
-    const currentDayType = (isWeekend || isPublicHoliday) ? 'HOLIDAY' : 'WORKDAY';
+    const currentDayType = isWeekend || isPublicHoliday ? "HOLIDAY" : "WORKDAY";
     // =========================================================
 
-    let currentCursor = reqStart; 
+    let currentCursor = reqStart;
     const detailsToInsert = [];
     let grandTotalHours = 0;
 
-    const workStartBound = dayjs(reqStart.format('YYYY-MM-DD') + ' ' + WORK_START_TIME);
-    const workEndBound   = dayjs(reqStart.format('YYYY-MM-DD') + ' ' + WORK_END_TIME);
+    const workStartBound = dayjs(
+      reqStart.format("YYYY-MM-DD") + " " + WORK_START_TIME
+    );
+    const workEndBound = dayjs(
+      reqStart.format("YYYY-MM-DD") + " " + WORK_END_TIME
+    );
 
     while (currentCursor.isBefore(reqEnd)) {
-        let period = '';
-        let nextCursor = null;
+      let period = "";
+      let nextCursor = null;
 
-        if (currentCursor.isBefore(workStartBound)) {
-            period = 'BEFORE_WORK';
-            nextCursor = reqEnd.isBefore(workStartBound) ? reqEnd : workStartBound;
-        } else if (currentCursor.isBefore(workEndBound)) {
-            period = 'DURING_WORK';
-            nextCursor = reqEnd.isBefore(workEndBound) ? reqEnd : workEndBound;
-        } else {
-            period = 'AFTER_WORK';
-            nextCursor = reqEnd;
-        }
+      if (currentCursor.isBefore(workStartBound)) {
+        period = "BEFORE_WORK";
+        nextCursor = reqEnd.isBefore(workStartBound) ? reqEnd : workStartBound;
+      } else if (currentCursor.isBefore(workEndBound)) {
+        period = "DURING_WORK";
+        nextCursor = reqEnd.isBefore(workEndBound) ? reqEnd : workEndBound;
+      } else {
+        period = "AFTER_WORK";
+        nextCursor = reqEnd;
+      }
 
-        // หมายเหตุ: Logic นี้ยังคงเดิม คือถ้าเป็น WORKDAY และอยู่ในเวลางาน จะข้าม (ไม่จ่าย OT)
-        // แต่ถ้า currentDayType กลายเป็น 'HOLIDAY' (เพราะตรงกับตาราง) บรรทัดนี้จะเป็น false และจะลงไปคำนวณเงินให้
-        if (currentDayType === 'WORKDAY' && period === 'DURING_WORK') {
-            currentCursor = nextCursor;
-            continue; 
-        }
-
-        const segmentDuration = nextCursor.diff(currentCursor, 'minute') / 60.0;
-        
-        if (segmentDuration > 0) {
-            // หา Config ที่ตรงกับเงื่อนไข (รวมถึงเช็ค HOLIDAY ที่เราเพิ่งแก้ด้วย)
-            const matchedConfig = allConfigs.find(cfg => 
-                cfg.employee_type_id == typeId && 
-                cfg.day_type === currentDayType && // <--- ตรงนี้จะใช้ค่าใหม่ที่เช็คจาก DB แล้ว
-                cfg.ot_period === period
-            );
-            
-            const config = matchedConfig || { rate: 1.0, min_continuous_hours: 99, require_break: 0, break_minutes: 0 };
-            
-            let netHours = segmentDuration;
-            if (config.require_break == 1 && segmentDuration >= parseFloat(config.min_continuous_hours)) {
-                netHours -= (parseInt(config.break_minutes) / 60.0);
-                if (netHours < 0) netHours = 0;
-            }
-            netHours = Math.round(netHours * 100) / 100;
-
-            if (netHours > 0) {
-                detailsToInsert.push({
-                    ot_start_time: dayjs(currentCursor).format('YYYY-MM-DD HH:mm:ss'),
-                    ot_end_time: dayjs(nextCursor).format('YYYY-MM-DD HH:mm:ss'),
-                    ot_hour: netHours,
-                    ot_rate: config.rate || 1.0
-                });
-                grandTotalHours += netHours;
-            }
-        }
+      // หมายเหตุ: Logic นี้ยังคงเดิม คือถ้าเป็น WORKDAY และอยู่ในเวลางาน จะข้าม (ไม่จ่าย OT)
+      // แต่ถ้า currentDayType กลายเป็น 'HOLIDAY' (เพราะตรงกับตาราง) บรรทัดนี้จะเป็น false และจะลงไปคำนวณเงินให้
+      if (currentDayType === "WORKDAY" && period === "DURING_WORK") {
         currentCursor = nextCursor;
+        continue;
+      }
+
+      const segmentDuration = nextCursor.diff(currentCursor, "minute") / 60.0;
+
+      if (segmentDuration > 0) {
+        // หา Config ที่ตรงกับเงื่อนไข (รวมถึงเช็ค HOLIDAY ที่เราเพิ่งแก้ด้วย)
+        const matchedConfig = allConfigs.find(
+          (cfg) =>
+            cfg.employee_type_id == typeId &&
+            cfg.day_type === currentDayType && // <--- ตรงนี้จะใช้ค่าใหม่ที่เช็คจาก DB แล้ว
+            cfg.ot_period === period
+        );
+
+        const config = matchedConfig || {
+          rate: 1.0,
+          min_continuous_hours: 99,
+          require_break: 0,
+          break_minutes: 0,
+        };
+
+        let netHours = segmentDuration;
+        if (
+          config.require_break == 1 &&
+          segmentDuration >= parseFloat(config.min_continuous_hours)
+        ) {
+          netHours -= parseInt(config.break_minutes) / 60.0;
+          if (netHours < 0) netHours = 0;
+        }
+        netHours = Math.round(netHours * 100) / 100;
+
+        if (netHours > 0) {
+          detailsToInsert.push({
+            ot_start_time: dayjs(currentCursor).format("YYYY-MM-DD HH:mm:ss"),
+            ot_end_time: dayjs(nextCursor).format("YYYY-MM-DD HH:mm:ss"),
+            ot_hour: netHours,
+            ot_rate: config.rate || 1.0,
+          });
+          grandTotalHours += netHours;
+        }
+      }
+      currentCursor = nextCursor;
     }
 
     return {
-        total: grandTotalHours,
-        details: detailsToInsert,
-        dayType: currentDayType 
+      total: grandTotalHours,
+      details: detailsToInsert,
+      dayType: currentDayType,
     };
   },
 
@@ -176,6 +190,7 @@ const OtModel = {
         const otRequestDetail = {
           ot_id: row.ot_id,
           request_id: row.request_id,
+          doc_no: row.doc_no,
           description: row.description,
           ot_duration: row.ot_duration,
           start_time: row.start_time,
@@ -194,7 +209,20 @@ const OtModel = {
 
   // หน้า 1
   async requestOt() {
-    const sql = `SELECT o.id, o.request_id, o.description, o.start_time, o.end_time, o.total, o.request_id, o.sts FROM ot o ORDER BY id ASC`;
+    // เลือกจาก View แทน
+    const sql = `
+      SELECT 
+        ot_id AS id, 
+        request_id, 
+        doc_no,            /* มี field นี้ใน View แล้ว */
+        description, 
+        start_time, 
+        end_time, 
+        total, 
+        ot_status AS sts 
+      FROM view_emp_ot 
+      ORDER BY ot_id ASC
+    `;
     const [rows] = await db.query(sql);
     return rows;
   },
@@ -226,7 +254,7 @@ const OtModel = {
       "1",
       data.created_by,
     ]);
-    
+
     return result.insertId;
   },
 

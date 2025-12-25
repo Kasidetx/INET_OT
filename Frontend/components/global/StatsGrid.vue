@@ -26,8 +26,8 @@
               {{ stat.count }}
             </div>
             <div class="text-caption font-weight-bold grey--text text--darken-1" style="font-size: 0.85rem !important;">
-              {{ stat.label }}
-            </div>
+              {{ stat.label }} 
+              </div>
           </div>
         </v-card>
       </v-hover>
@@ -46,7 +46,6 @@ export default {
     getCardStyle(stat) {
       const isActive = this.currentFilter === stat.filterKey;
       if (isActive) {
-         // Active State: พื้นหลังสีเดียวกับ Icon Bg, ขอบสีเข้ม
          return `background-color: ${stat.bg}; border: 2px solid ${stat.color};`;
       }
       return `background-color: white; border: 1px solid #E5E7EB;`;

@@ -64,8 +64,8 @@
 </template>
 
 <script>
-import StatsGrid from '@/components/overtimeapprove/StatsGrid.vue'
-import FilterToolbar from '@/components/overtimeapprove/FilterToolbar.vue'
+import StatsGrid from '@/components/global/StatsGrid.vue'
+import FilterToolbar from '@/components/global/FilterToolbar.vue'
 import EmployeeTable from '@/components/overtimeapprove/EmployeeTable.vue'
 import Dialog from '@/components/overtimeapprove/Dialog.vue'
 import TrackingDialog from '@/components/overtimeapprove/TrackingDialog.vue'
@@ -308,7 +308,7 @@ export default {
             return {
               id: idx + 1,
               otId: ot.ot_id || ot.id || ot.otId,
-              reqNo: ot.request_id || "-",
+              reqNo: ot.doc_no || "-",
               transDate: this.formatDateTime(ot.created_at || ot.start_time, 'date'),
               start: `${this.formatDateTime(ot.start_time, 'date')} ${this.formatDateTime(ot.start_time, 'time')}`,
               end: `${this.formatDateTime(ot.end_time, 'date')} ${this.formatDateTime(ot.end_time, 'time')}`,
@@ -320,7 +320,6 @@ export default {
               status: statusId,
               empCode: emp.employee_code || "-",
               empName: emp.employee_name || "-",
-              _rowKey: `${emp.employee_code || index}-${idx}`
             }
           })
 
