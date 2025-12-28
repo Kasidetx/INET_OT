@@ -1,9 +1,10 @@
 import OtConfigModel from '../models/otConfig.model.js';
+import { sendResponse } from "../utils/response.js";
 
 export const getAllOtConfigs = async (req, res) => {
     try {
         const otConfigs = await OtConfigModel.findAll();
-        res.json({ success: true, data: otConfigs });
+        sendResponse(res, 200, otConfigs);
     } catch (error) {
         console.error('Error fetching OT configs:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -19,7 +20,7 @@ export const getOtConfigById = async (req, res) => {
             return res.status(404).json({ success: false, message: 'OT Config not found' });
         }
 
-        res.json({ success: true, data: otConfig });
+        sendResponse(res, 200, otConfig);
     } catch (error) {
         console.error('Error fetching OT config:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -44,7 +45,7 @@ export const createOtConfig = async (req, res) => {
             deduction_min,
             is_active
         });
-        res.status(201).json({ success: true, data: newOtConfig, message: 'OT Config created successfully' });
+        sendResponse(res, 201, newOtConfig, 'OT Config created successfully');
     } catch (error) {
         console.error('Error creating OT config:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -71,7 +72,7 @@ export const updateOtConfig = async (req, res) => {
             return res.status(404).json({ success: false, message: 'OT Config not found or no changes made' });
         }
 
-        res.json({ success: true, message: 'OT Config updated successfully' });
+        sendResponse(res, 200, null, 'OT Config updated successfully');
     } catch (error) {
         console.error('Error updating OT config:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -87,7 +88,7 @@ export const deleteOtConfig = async (req, res) => {
             return res.status(404).json({ success: false, message: 'OT Config not found' });
         }
 
-        res.json({ success: true, message: 'OT Config deleted successfully' });
+        sendResponse(res, 200, null, 'OT Config deleted successfully');
     } catch (error) {
         console.error('Error deleting OT config:', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });

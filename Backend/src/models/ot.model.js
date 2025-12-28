@@ -2,6 +2,35 @@ import db from "../config/db.js";
 import dayjs from "dayjs";
 const WORK_START_TIME = "08:30:00";
 const WORK_END_TIME = "17:30:00";
+
+// --- Private Helpers (Logic Only) ---
+// แยก Logic การตรวจสอบวันหยุดออกมา
+const _getDayType = (dateObj, holidayList) => {
+  const isWeekend = [0, 6].includes(dateObj.day());
+  const isPublicHoliday = holidayList.includes(dateObj.format("YYYY-MM-DD"));
+  return isWeekend || isPublicHoliday ? "HOLIDAY" : "WORKDAY";
+};
+
+// แยก Logic การหาช่วงเวลา (Before/During/After Work)
+const _getPeriod = (cursor, workStart, workEnd) => {
+  if (cursor.isBefore(workStart)) return "BEFORE_WORK";
+  if (cursor.isBefore(workEnd)) return "DURING_WORK";
+  return "AFTER_WORK";
+};
+
+// แยก Logic การคำนวณ Net Hours (หักพักเบรค)
+const _calculateNetHours = (duration, config) => {
+  if (!config) return duration;
+  let net = duration;
+  if (
+    config.require_break == 1 &&
+    duration >= parseFloat(config.min_continuous_hours)
+  ) {
+    net -= parseInt(config.break_minutes) / 60.0;
+  }
+  return Math.max(0, parseFloat(net.toFixed(2)));
+};
+
 const OtModel = {
   async AllEmployee(empId) {
     // 1. สร้างเงื่อนไข JOIN พื้นฐาน
@@ -71,53 +100,31 @@ const OtModel = {
     const reqStart = dayjs(startStr);
     const reqEnd = dayjs(endStr);
 
-    if (reqEnd.isBefore(reqStart)) {
+    if (reqEnd.isBefore(reqStart))
       throw new Error("End time must be after start time");
-    }
 
-    // =========================================================
-    // LOGIC เช็ควันหยุด (Holiday Logic)
-    // =========================================================
-    // 1. เช็คว่าเป็นเสาร์-อาทิตย์ไหม? (0=Sun, 6=Sat)
-    const isWeekend = reqStart.day() === 0 || reqStart.day() === 6;
-
-    // 2. เช็คว่าวันที่ของ OT ตรงกับในตาราง Holiday ไหม?
-    // แปลงวันที่ของ request เป็น YYYY-MM-DD เพื่อเทียบกับ list
-    const dateKey = reqStart.format("YYYY-MM-DD");
-    const isPublicHoliday = holidayList.includes(dateKey);
-
-    // 3. ถ้าเป็น (เสาร์อาทิตย์) หรือ (ตรงกับวันหยุดนักขัตฤกษ์) => ถือเป็น HOLIDAY
-    const currentDayType = isWeekend || isPublicHoliday ? "HOLIDAY" : "WORKDAY";
-    // =========================================================
+    // 1. Setup Variables
+    const dateStr = reqStart.format("YYYY-MM-DD");
+    const workStartBound = dayjs(`${dateStr} ${WORK_START_TIME}`);
+    const workEndBound = dayjs(`${dateStr} ${WORK_END_TIME}`);
+    const currentDayType = _getDayType(reqStart, holidayList);
 
     let currentCursor = reqStart;
     const detailsToInsert = [];
     let grandTotalHours = 0;
 
-    const workStartBound = dayjs(
-      reqStart.format("YYYY-MM-DD") + " " + WORK_START_TIME
-    );
-    const workEndBound = dayjs(
-      reqStart.format("YYYY-MM-DD") + " " + WORK_END_TIME
-    );
-
+    // 2. Main Loop
     while (currentCursor.isBefore(reqEnd)) {
-      let period = "";
-      let nextCursor = null;
+      const period = _getPeriod(currentCursor, workStartBound, workEndBound);
 
-      if (currentCursor.isBefore(workStartBound)) {
-        period = "BEFORE_WORK";
+      // Determine End of this segment
+      let nextCursor = reqEnd;
+      if (period === "BEFORE_WORK")
         nextCursor = reqEnd.isBefore(workStartBound) ? reqEnd : workStartBound;
-      } else if (currentCursor.isBefore(workEndBound)) {
-        period = "DURING_WORK";
+      else if (period === "DURING_WORK")
         nextCursor = reqEnd.isBefore(workEndBound) ? reqEnd : workEndBound;
-      } else {
-        period = "AFTER_WORK";
-        nextCursor = reqEnd;
-      }
 
-      // หมายเหตุ: Logic นี้ยังคงเดิม คือถ้าเป็น WORKDAY และอยู่ในเวลางาน จะข้าม (ไม่จ่าย OT)
-      // แต่ถ้า currentDayType กลายเป็น 'HOLIDAY' (เพราะตรงกับตาราง) บรรทัดนี้จะเป็น false และจะลงไปคำนวณเงินให้
+      // Skip normal working hours on a workday
       if (currentDayType === "WORKDAY" && period === "DURING_WORK") {
         currentCursor = nextCursor;
         continue;
@@ -126,14 +133,15 @@ const OtModel = {
       const segmentDuration = nextCursor.diff(currentCursor, "minute") / 60.0;
 
       if (segmentDuration > 0) {
-        // หา Config ที่ตรงกับเงื่อนไข (รวมถึงเช็ค HOLIDAY ที่เราเพิ่งแก้ด้วย)
+        // Find Config
         const matchedConfig = allConfigs.find(
           (cfg) =>
             cfg.employee_type_id == typeId &&
-            cfg.day_type === currentDayType && // <--- ตรงนี้จะใช้ค่าใหม่ที่เช็คจาก DB แล้ว
+            cfg.day_type === currentDayType &&
             cfg.ot_period === period
         );
 
+        // Fallback config
         const config = matchedConfig || {
           rate: 1.0,
           min_continuous_hours: 99,
@@ -141,20 +149,12 @@ const OtModel = {
           break_minutes: 0,
         };
 
-        let netHours = segmentDuration;
-        if (
-          config.require_break == 1 &&
-          segmentDuration >= parseFloat(config.min_continuous_hours)
-        ) {
-          netHours -= parseInt(config.break_minutes) / 60.0;
-          if (netHours < 0) netHours = 0;
-        }
-        netHours = Math.round(netHours * 100) / 100;
+        const netHours = _calculateNetHours(segmentDuration, config);
 
         if (netHours > 0) {
           detailsToInsert.push({
-            ot_start_time: dayjs(currentCursor).format("YYYY-MM-DD HH:mm:ss"),
-            ot_end_time: dayjs(nextCursor).format("YYYY-MM-DD HH:mm:ss"),
+            ot_start_time: currentCursor.format("YYYY-MM-DD HH:mm:ss"),
+            ot_end_time: nextCursor.format("YYYY-MM-DD HH:mm:ss"),
             ot_hour: netHours,
             ot_rate: config.rate || 1.0,
           });
@@ -165,7 +165,7 @@ const OtModel = {
     }
 
     return {
-      total: grandTotalHours,
+      total: parseFloat(grandTotalHours.toFixed(2)),
       details: detailsToInsert,
       dayType: currentDayType,
     };
