@@ -30,6 +30,12 @@ export default {
     statusConfig() {
       // ใช้ชุดสีที่ Modern ขึ้น (Emerald, Amber, Rose, Slate)
       const map = {
+        0: { 
+          label: "รอดำเนินการ", 
+          bg: "#FFFBEB", // เหลืองอ่อนมาก
+          text: "#B45309", // ส้มเข้ม
+          border: "#FDE68A" // ขอบเหลืองจางๆ
+        },
         1: { 
           label: "รอหัวหน้าอนุมัติ", 
           bg: "#FFFBEB", // เหลืองอ่อนมาก
@@ -68,7 +74,7 @@ export default {
         }
       };
       
-      return map[this.value] || { label: "ไม่มี", bg: "#F3F4F6", text: "#9CA3AF", border: "transparent" };
+      return map[this.value] || { label: "ไม่ระบุ", bg: "#F3F4F6", text: "#9CA3AF", border: "transparent" };
     }
   }
 };
