@@ -1,77 +1,53 @@
 import WorkdayModel from '../models/workday.model.js';
+import { catchAsync } from "../utils/catchAsync.js";
+import { sendResponse } from "../utils/response.js";
 
-export const getAllWorkdays = async (req, res) => {
-    try {
-        const workdays = await WorkdayModel.findAll();
-        res.json({ success: true, data: workdays });
-    } catch (error) {
-        console.error('Error fetching workdays:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
+export const getAllWorkdays = catchAsync(async (req, res) => {
+    const workdays = await WorkdayModel.findAll();
+    sendResponse(res, 200, workdays);
+});
+
+export const getWorkdayById = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const workday = await WorkdayModel.findById(id);
+
+    if (!workday) {
+        throw { statusCode: 404, message: 'Workday not found' };
     }
-};
 
-export const getWorkdayById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const workday = await WorkdayModel.findById(id);
+    sendResponse(res, 200, workday);
+});
 
-        if (!workday) {
-            return res.status(404).json({ success: false, message: 'Workday not found' });
-        }
-
-        res.json({ success: true, data: workday });
-    } catch (error) {
-        console.error('Error fetching workday:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
+export const createWorkday = catchAsync(async (req, res) => {
+    const { name, work_day, work_hour, start_time, end_time } = req.body;
+    
+    if (!name || !work_day || !start_time || !end_time) {
+        throw { statusCode: 400, message: 'Missing required fields' };
     }
-};
 
-export const createWorkday = async (req, res) => {
-    try {
-        const { name, work_day, work_hour, start_time, end_time } = req.body;
+    const newWorkday = await WorkdayModel.create({ name, work_day, work_hour, start_time, end_time });
+    sendResponse(res, 201, newWorkday, 'Workday created successfully');
+});
 
-        if (!name || !work_day || !start_time || !end_time) {
-            return res.status(400).json({ success: false, message: 'Missing required fields' });
-        }
-
-        const newWorkday = await WorkdayModel.create({ name, work_day, work_hour, start_time, end_time });
-        res.status(201).json({ success: true, data: newWorkday, message: 'Workday created successfully' });
-    } catch (error) {
-        console.error('Error creating workday:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
+export const updateWorkday = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { name, work_day, work_hour, start_time, end_time } = req.body;
+    
+    const updated = await WorkdayModel.update(id, { name, work_day, work_hour, start_time, end_time });
+    if (!updated) {
+        throw { statusCode: 404, message: 'Workday not found or no changes made' };
     }
-};
 
-export const updateWorkday = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { name, work_day, work_hour, start_time, end_time } = req.body;
+    sendResponse(res, 200, null, 'Workday updated successfully');
+});
 
-        const updated = await WorkdayModel.update(id, { name, work_day, work_hour, start_time, end_time });
+export const deleteWorkday = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const deleted = await WorkdayModel.remove(id);
 
-        if (!updated) {
-            return res.status(404).json({ success: false, message: 'Workday not found or no changes made' });
-        }
-
-        res.json({ success: true, message: 'Workday updated successfully' });
-    } catch (error) {
-        console.error('Error updating workday:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    if (!deleted) {
+        throw { statusCode: 404, message: 'Workday not found' };
     }
-};
 
-export const deleteWorkday = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deleted = await WorkdayModel.remove(id);
-
-        if (!deleted) {
-            return res.status(404).json({ success: false, message: 'Workday not found' });
-        }
-
-        res.json({ success: true, message: 'Workday deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting workday:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-};
+    sendResponse(res, 200, null, 'Workday deleted successfully');
+});

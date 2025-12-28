@@ -133,7 +133,8 @@ export const updateOt = catchAsync(async (req, res) => {
     });
 
     // Return early เพื่อลด nesting
-    return res.json({ success: true, data: await OtModel.findById(id) });
+    const otData = await OtModel.findById(id);
+    return sendResponse(res, 200, otData);
   }
 
   // Case B: Recalculate Logic
@@ -206,5 +207,5 @@ export const deleteOt = catchAsync(async (req, res) => {
   if (!exists) throw { statusCode: 404, message: "OT not found" };
 
   await OtModel.remove(id);
-  res.json({ success: true, message: "Deleted" });
+  sendResponse(res, 200, null, "Deleted");
 });

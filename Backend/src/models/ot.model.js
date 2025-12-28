@@ -1,21 +1,22 @@
 import db from "../config/db.js";
 import dayjs from "dayjs";
-const WORK_START_TIME = "08:30:00";
-const WORK_END_TIME = "17:30:00";
+import { WORK_TIME, DAY_TYPE, OT_PERIOD } from "../config/constants.js";
 
 // --- Private Helpers (Logic Only) ---
 // แยก Logic การตรวจสอบวันหยุดออกมา
 const _getDayType = (dateObj, holidayList) => {
   const isWeekend = [0, 6].includes(dateObj.day());
   const isPublicHoliday = holidayList.includes(dateObj.format("YYYY-MM-DD"));
-  return isWeekend || isPublicHoliday ? "HOLIDAY" : "WORKDAY";
+  // ✅ ใช้ Constant
+  return isWeekend || isPublicHoliday ? DAY_TYPE.HOLIDAY : DAY_TYPE.WORKDAY;
 };
 
 // แยก Logic การหาช่วงเวลา (Before/During/After Work)
 const _getPeriod = (cursor, workStart, workEnd) => {
-  if (cursor.isBefore(workStart)) return "BEFORE_WORK";
-  if (cursor.isBefore(workEnd)) return "DURING_WORK";
-  return "AFTER_WORK";
+  // ✅ ใช้ Constant
+  if (cursor.isBefore(workStart)) return OT_PERIOD.BEFORE;
+  if (cursor.isBefore(workEnd)) return OT_PERIOD.DURING;
+  return OT_PERIOD.AFTER;
 };
 
 // แยก Logic การคำนวณ Net Hours (หักพักเบรค)
@@ -105,8 +106,8 @@ const OtModel = {
 
     // 1. Setup Variables
     const dateStr = reqStart.format("YYYY-MM-DD");
-    const workStartBound = dayjs(`${dateStr} ${WORK_START_TIME}`);
-    const workEndBound = dayjs(`${dateStr} ${WORK_END_TIME}`);
+    const workStartBound = dayjs(`${dateStr} ${WORK_TIME.START}`);
+    const workEndBound = dayjs(`${dateStr} ${WORK_TIME.END}`);
     const currentDayType = _getDayType(reqStart, holidayList);
 
     let currentCursor = reqStart;
@@ -125,7 +126,7 @@ const OtModel = {
         nextCursor = reqEnd.isBefore(workEndBound) ? reqEnd : workEndBound;
 
       // Skip normal working hours on a workday
-      if (currentDayType === "WORKDAY" && period === "DURING_WORK") {
+      if (currentDayType === DAY_TYPE.WORKDAY && period === OT_PERIOD.DURING) {
         currentCursor = nextCursor;
         continue;
       }
@@ -172,10 +173,8 @@ const OtModel = {
   },
 
   async findById(id) {
-    console.log(`Checking DB for OT ID: ${id}`); // <--- เพิ่มบรรทัดนี้
     const sql = `SELECT * FROM ot WHERE id = ?`;
     const [rows] = await db.query(sql, [id]);
-    console.log("Result:", rows); // <--- เพิ่มบรรทัดนี้
     return rows[0] || null;
   },
   // function group
