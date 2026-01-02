@@ -93,6 +93,18 @@ export default {
         });
       }
     },
+    value(val) {
+      if (val.length === 0) {
+        // เช็คว่าข้างในมีค่าค้างอยู่ไหม ถ้ามีให้ล้างออก
+        const hasSelection = Object.values(this.selectedRequestsByEmp).some(arr => arr && arr.length > 0);
+
+        if (hasSelection) {
+          Object.keys(this.selectedRequestsByEmp).forEach(key => {
+            this.selectedRequestsByEmp[key] = [];
+          });
+        }
+      }
+    },
     selectedRequestsByEmp: {
       deep: true,
       handler(val) {

@@ -111,7 +111,13 @@ export default {
           title: "เบิกคำขอค่าล่วงเวลา", // ปรับชื่อให้สื่อความหมายชัดขึ้น
           to: "/timeattendance",
           roles: ["User"],
-        }
+        },
+        {
+          icon: 'mdi-file-document-edit-outline', // เปลี่ยนไอคอนให้สื่อถึงการขอเอกสาร
+          title: 'แบบฟอร์มขอ OT',
+          to: '/overtimerequest',
+          roles: ['User']
+        },
       ],
       // กลุ่ม 2: เมนูสำหรับ HR (จัดการ / อนุมัติ)
       items_hr: [
@@ -120,12 +126,6 @@ export default {
           title: "ตั้งค่าระบบ OT", // ปรับชื่อเพื่อไม่ให้ซ้ำกับข้างบน
           to: "/overtime",
           roles: ["HR"],
-        },
-        {
-          icon: 'mdi-file-document-edit-outline', // เปลี่ยนไอคอนให้สื่อถึงการขอเอกสาร
-          title: 'แบบฟอร์มขอ OT',
-          to: '/overtimerequest',
-          roles: ['User']
         },
         {
           icon: 'mdi-checkbox-marked-circle-outline', // เปลี่ยนไอคอนให้สื่อถึงการอนุมัติ

@@ -24,8 +24,9 @@
       <!-- ✅ WHITE BACKGROUND AREA (Table + Pagination) -->
       <v-container fluid class="white-area mt-4 pa-4 rounded-xl">
         <EmployeeTable :key="tableKey" :items="paginatedEmployees" :total-items="filteredEmployees.length"
-          :loading="loading" :is-selectable="isPendingMode" v-model="selectedRequests" @approve="openAction('approve')"
-          @reject="openAction('reject')" @view="openTracking" />
+          :loading="loading" :is-selectable="isPendingMode" :show-approve="statusFilter === 'pending_hr'"
+          v-model="selectedRequests" @approve="openAction('approve')" @reject="openAction('reject')"
+          @view="openTracking" />
 
         <v-row class="mt-4 align-center justify-end" v-if="filteredEmployees.length > 0">
           <span class="caption grey--text mr-3">จำนวนแถว</span>

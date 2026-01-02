@@ -16,8 +16,8 @@
         </template>
       </FilterToolbar>
 
-      <RequestTable :items="filteredItems" :loading="loading" :selected.sync="selectedItems" @view="onView"
-        @bulk-cancel="onBulkCancel" />
+      <RequestTable :items="filteredItems" :loading="loading" :selected.sync="selectedItems"
+        :show-select="filterStatus === 'pending_head' || filterStatus === 'pending_hr'" @view="onView" @bulk-cancel="onBulkCancel" />
 
       <DialogCancelRequest v-model="cancelDialog" :items="itemsToCancel" @confirm="confirmCancelRequest" />
 
@@ -303,7 +303,7 @@ export default {
             };
           });
 
-          this.attendanceRecords = records.sort((a, b) => b.id - a.id);
+          this.attendanceRecords = records.sort((a, b) => a.id - b.id);
 
           // Years List
           const yearSet = new Set();

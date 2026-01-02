@@ -2,7 +2,8 @@
     <v-card outlined elevation="0" class="white">
         <v-card-title class="pb-4 blue--text d-flex justify-space-between align-center">
             <span>รายการเอกสาร {{ filteredItems.length }} รายการ</span>
-            <div v-if="selected.length > 0">
+            
+            <div v-if="showSelect && selected.length > 0">
                 <v-btn color="#1565c0" dark depressed @click="$emit('bulk-cancel')" class="rounded-lg px-6 subtitle-2"
                     height="40">
                     ยกเลิกคำร้องขอ
@@ -16,10 +17,11 @@
             <template #default>
                 <thead>
                     <tr class="blue lighten-5">
-                        <th class="text-center" width="50">
+                        <th v-if="showSelect" class="text-center" width="50">
                             <v-checkbox :input-value="selectAll" @change="toggleSelectAll" hide-details
                                 class="mt-0 pt-0" />
                         </th>
+                        
                         <th v-for="(h, i) in headers" :key="i" :class="h.class || 'text-left'" :width="h.width">
                             {{ h.text }}
                         </th>
@@ -27,13 +29,11 @@
                 </thead>
                 <tbody>
                     <tr v-for="(item, index) in paginatedItems" :key="item.id">
-                        <td class="text-center">
+                        <td v-if="showSelect" class="text-center">
                             <v-checkbox v-model="localSelected" :value="item.id" hide-details class="mt-0 pt-0" />
                         </td>
                         
-                        <td class="font-weight-bold text-center">{{ item.request_no }}</td>
-                        
-                        <td class="font-weight-medium">{{ item.docs_no }}</td>
+                        <td class="font-weight-bold text-center">{{ item.request_no }}</td> <td class="font-weight-medium">{{ item.docs_no }}</td>
                         <td class="black--text">{{ item.title }}</td>
                         <td>
                             <div>{{ item.startDate }}</div>
@@ -58,26 +58,10 @@
         </v-simple-table>
 
         <div v-if="!loading && paginatedItems.length === 0" class="text-center pa-8">
-            <v-img :src="require('@/assets/img/Delete.png')" max-width="120" class="mx-auto mb-4" contain></v-img>
-            <div class="headline font-weight-bold blue--text text--darken-2 mb-2">ขออภัย</div>
-            <div class="blue--text subtitle-1">ไม่มีรายการเอกสารคำขอเบิกค่าล่วงเวลา</div>
-        </div>
+             </div>
 
-        <v-card-actions v-if="filteredItems.length > 0"
-            class="d-flex align-center justify-space-between pagination-controls pa-3">
-            <span class="black--text">จำนวนแถว</span>
-            <div class="d-flex align-center">
-                <v-select v-model="perPage" :items="[10, 20, 50]" dense hide-details outlined style="max-width:80px"
-                    class="mr-3" @change="page = 1" />
-                <span class="grey--text subtitle-2 mr-3 pagination-range">{{ rangeText }}</span>
-                <v-btn icon :disabled="page === 1" @click="page = Math.max(1, page - 1)" class="mr-2">
-                    <v-icon>mdi-chevron-left</v-icon>
-                </v-btn>
-                <v-btn icon :disabled="page === pages" @click="page = Math.min(pages, page + 1)">
-                    <v-icon color="primary">mdi-chevron-right</v-icon>
-                </v-btn>
-            </div>
-        </v-card-actions>
+        <v-card-actions v-if="filteredItems.length > 0" class="...">
+             </v-card-actions>
     </v-card>
 </template>
 
@@ -89,14 +73,17 @@ export default {
     props: {
         items: { type: Array, default: () => [] },
         loading: { type: Boolean, default: false },
-        selected: { type: Array, default: () => [] }
+        selected: { type: Array, default: () => [] },
+        // ✅ เพิ่ม Props รับค่าว่าจะให้โชว์ Checkbox ไหม
+        showSelect: { type: Boolean, default: false }
     },
+    // ... (data, computed, methods เหมือนเดิม ไม่ต้องแก้)
     data() {
         return {
             page: 1,
             perPage: 10,
             headers: [
-                // ปรับ class เป็น text-center เพื่อความสวยงาม
+                // เอา checkbox ออกจาก headers เพราะเราเขียนแยกไว้ใน template แล้ว
                 { text: "ลำดับ", width: "50", class: "text-center" }, 
                 { text: "หมายเลขคำร้อง" },
                 { text: "รายละเอียด" },
