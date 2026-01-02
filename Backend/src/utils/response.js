@@ -1,9 +1,12 @@
 export const sendResponse = (res, statusCode, data, message = null) => {
-  res.status(statusCode).json({
+  const response = {
     success: true,
-    if (message) {
-        message
-    },
     data,
-  });
+  };
+
+  if (message) {
+    response.message = message;
+  }
+
+  res.status(statusCode).json(response);
 };

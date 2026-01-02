@@ -1,19 +1,15 @@
 import db from "../config/db.js";
 import dayjs from "dayjs";
-import { WORK_TIME, DAY_TYPE, OT_PERIOD } from "../config/constants.js";
+import { WORK_TIME, DAY_TYPE, OT_PERIOD, OT_STATUS } from "../config/constants.js";
 
 // --- Private Helpers (Logic Only) ---
-// แยก Logic การตรวจสอบวันหยุดออกมา
 const _getDayType = (dateObj, holidayList) => {
   const isWeekend = [0, 6].includes(dateObj.day());
   const isPublicHoliday = holidayList.includes(dateObj.format("YYYY-MM-DD"));
-  // ✅ ใช้ Constant
   return isWeekend || isPublicHoliday ? DAY_TYPE.HOLIDAY : DAY_TYPE.WORKDAY;
 };
 
-// แยก Logic การหาช่วงเวลา (Before/During/After Work)
 const _getPeriod = (cursor, workStart, workEnd) => {
-  // ✅ ใช้ Constant
   if (cursor.isBefore(workStart)) return OT_PERIOD.BEFORE;
   if (cursor.isBefore(workEnd)) return OT_PERIOD.DURING;
   return OT_PERIOD.AFTER;
@@ -23,24 +19,25 @@ const _getPeriod = (cursor, workStart, workEnd) => {
 const _calculateNetHours = (duration, config) => {
   if (!config) return duration;
   let net = duration;
+
+  // ตรวจสอบเงื่อนไขหักพักเบรค (ถ้ามี)
   if (
     config.require_break == 1 &&
     duration >= parseFloat(config.min_continuous_hours)
   ) {
     net -= parseInt(config.break_minutes) / 60.0;
   }
+  
+  // ✅ จุดสำคัญ: ใช้ toFixed(2) เพื่อเก็บทศนิยม 2 ตำแหน่ง (เช่น 0.50)
+  // parseFloat จะแปลงกลับเป็น number (เช่น 0.5) ไม่มีการปัดเป็นจำนวนเต็ม
   return Math.max(0, parseFloat(net.toFixed(2)));
 };
 
 const OtModel = {
   async AllEmployee(empId) {
-    // 1. สร้างเงื่อนไข JOIN พื้นฐาน
     let joinCondition = "e.emp_id = v.emp_id";
-
-    // ✅ LOGIC ใหม่: ถ้าเป็นการเรียกดูทั้งหมด (HR ดูหน้าอนุมัติ) ให้ซ่อน Status 0
-    // แต่ถ้ามี empId (พนักงานดูหน้า Time Attendance) ให้โชว์ Status 0 ได้
     if (!empId) {
-      joinCondition += " AND v.req_status != '0'";
+      joinCondition += ` AND v.req_status != '${OT_STATUS.DRAFT}'`;
     }
 
     let sql = `
@@ -61,10 +58,8 @@ const OtModel = {
         v.created_at,
         v.req_status
     FROM view_employee e
-    /* ✅ ใช้ตัวแปร joinCondition ที่เราสร้างแบบ Dynamic */
     LEFT JOIN view_emp_ot v ON ${joinCondition}
     `;
-
     const params = [];
 
     if (empId) {
@@ -78,10 +73,8 @@ const OtModel = {
   },
 
   async updateRequestStatus(requestId, status, description = null) {
-    // อัปเดตสถานะ และวันที่แก้ไขล่าสุด (ถ้ามี field updated_at)
     let sql = `UPDATE request SET sts = ? WHERE id = ?`;
     let params = [status, requestId];
-
     const [result] = await db.query(sql, params);
     return result.affectedRows > 0;
   },
@@ -90,13 +83,12 @@ const OtModel = {
     if (!lastDocNo) return "OT-1";
     const parts = lastDocNo.split("-");
     if (parts.length < 2) return "OT-1";
-
     const numberPart = parseInt(parts[1], 10);
     if (isNaN(numberPart)) return "OT-1";
-
     return `OT-${numberPart + 1}`;
   },
 
+  // --- Main Logic Calculation ---
   calculateOtDetails(startStr, endStr, typeId, allConfigs, holidayList = []) {
     const reqStart = dayjs(startStr);
     const reqEnd = dayjs(endStr);
@@ -104,7 +96,6 @@ const OtModel = {
     if (reqEnd.isBefore(reqStart))
       throw new Error("End time must be after start time");
 
-    // 1. Setup Variables
     const dateStr = reqStart.format("YYYY-MM-DD");
     const workStartBound = dayjs(`${dateStr} ${WORK_TIME.START}`);
     const workEndBound = dayjs(`${dateStr} ${WORK_TIME.END}`);
@@ -114,12 +105,10 @@ const OtModel = {
     const detailsToInsert = [];
     let grandTotalHours = 0;
 
-    // 2. Main Loop
     while (currentCursor.isBefore(reqEnd)) {
       const period = _getPeriod(currentCursor, workStartBound, workEndBound);
-
-      // Determine End of this segment
       let nextCursor = reqEnd;
+
       if (period === "BEFORE_WORK")
         nextCursor = reqEnd.isBefore(workStartBound) ? reqEnd : workStartBound;
       else if (period === "DURING_WORK")
@@ -131,10 +120,10 @@ const OtModel = {
         continue;
       }
 
+      // ✅ คำนวณเป็นทศนิยมจริง (นาที / 60) เช่น 30/60 = 0.5
       const segmentDuration = nextCursor.diff(currentCursor, "minute") / 60.0;
-
+      
       if (segmentDuration > 0) {
-        // Find Config
         const matchedConfig = allConfigs.find(
           (cfg) =>
             cfg.employee_type_id == typeId &&
@@ -142,7 +131,6 @@ const OtModel = {
             cfg.ot_period === period
         );
 
-        // Fallback config
         const config = matchedConfig || {
           rate: 1.0,
           min_continuous_hours: 99,
@@ -156,7 +144,7 @@ const OtModel = {
           detailsToInsert.push({
             ot_start_time: currentCursor.format("YYYY-MM-DD HH:mm:ss"),
             ot_end_time: nextCursor.format("YYYY-MM-DD HH:mm:ss"),
-            ot_hour: netHours,
+            ot_hour: netHours, // ค่านี้จะเป็น 0.5, 1.5 ตามจริง
             ot_rate: config.rate || 1.0,
           });
           grandTotalHours += netHours;
@@ -177,34 +165,26 @@ const OtModel = {
     const [rows] = await db.query(sql, [id]);
     return rows[0] || null;
   },
-  // function group
+
   groupEmployeeData(flatRows) {
     const employeesMap = new Map();
-
     for (const row of flatRows) {
       const { employee_code, request_id } = row;
-
-      // A. จัดการข้อมูลพนักงานหลัก (Parent)
       if (!employeesMap.has(employee_code)) {
         const EmployeeInfo = {
           eid: row.employee_id,
           employee_code: employee_code,
           employee_name: row.employee_name,
           position: row.position,
-
           total_requests_count: row.total_requests_count,
           total_ot_hour_summary: row.total_ot_hour_summary,
           ot_requests: [],
         };
-
         employeesMap.set(employee_code, EmployeeInfo);
       }
 
-      // B. จัดการข้อมูลรายละเอียด OT (Child)
       const currentEmployee = employeesMap.get(employee_code);
-
       if (request_id) {
-        // มีรายละเอียด OT
         const otRequestDetail = {
           ot_id: row.ot_id,
           request_id: row.request_id,
@@ -216,30 +196,17 @@ const OtModel = {
           created_at: row.created_at,
           sts: row.req_status,
         };
-
         currentEmployee.ot_requests.push(otRequestDetail);
       }
     }
-
-    // คืนค่าเป็น Array
     return Array.from(employeesMap.values());
   },
 
-  // หน้า 1
   async requestOt() {
     const sql = `
-      SELECT 
-        ot_id AS id, 
-        request_id, 
-        doc_no,
-        description, 
-        start_time, 
-        end_time, 
-        total, 
-        req_status AS sts
+      SELECT ot_id AS id, request_id, doc_no, description, start_time, end_time, total, req_status AS sts
       FROM view_emp_ot 
-      /* ✅ เพิ่ม WHERE เพื่อกรอง Draft ออก */
-      WHERE req_status != '0'
+      WHERE req_status != '${OT_STATUS.DRAFT}'
       ORDER BY ot_id ASC
     `;
     const [rows] = await db.query(sql);
@@ -248,19 +215,17 @@ const OtModel = {
 
   async findActiveRequest(empId) {
     const sql =
-      "SELECT * FROM request WHERE created_by = ? AND sts = '1' ORDER BY created_at DESC LIMIT 1";
+      "SELECT * FROM request WHERE created_by = ? AND sts = '${OT_STATUS.SUBMIT}' ORDER BY created_at DESC LIMIT 1";
     const [rows] = await db.query(sql, [empId]);
     return rows[0];
   },
 
-  // 2. หาเลขที่เอกสารล่าสุดเพื่อเอามา Gen เลขถัดไป
   async getLastRequestDocNo() {
     const sql = "SELECT doc_no FROM request ORDER BY id DESC LIMIT 1";
     const [rows] = await db.query(sql);
     return rows[0]?.doc_no;
   },
 
-  // 3. สร้างใบคำขอ (Header) ใหม่
   async createRequest(data) {
     const sql = `
       INSERT INTO request (doc_no, title, type, sts, created_by, created_at) 
@@ -273,7 +238,6 @@ const OtModel = {
       data.sts,
       data.created_by,
     ]);
-
     return result.insertId;
   },
 
@@ -282,7 +246,6 @@ const OtModel = {
       INSERT INTO ot (request_id, start_time, end_time, description, emp_id, total, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-
     const values = [
       data.request_id,
       data.start_time,
@@ -292,7 +255,6 @@ const OtModel = {
       data.total || 0,
       data.created_by,
     ];
-
     const [result] = await db.query(sql, values);
     return { id: result.insertId, ...data };
   },
@@ -303,7 +265,6 @@ const OtModel = {
       SET start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, created_by = ?
       WHERE id = ?
     `;
-
     const values = [
       data.start_time,
       data.end_time,
@@ -313,7 +274,6 @@ const OtModel = {
       data.created_by,
       id,
     ];
-
     const [result] = await db.query(sql, values);
     return result.affectedRows > 0;
   },

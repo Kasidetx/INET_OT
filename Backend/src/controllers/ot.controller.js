@@ -32,7 +32,7 @@ export const getOtById = catchAsync(async (req, res) => {
   const item = await OtModel.findById(id);
   if (!item) throw { statusCode: 404, message: "OT not found" };
 
-  res.json({ success: true, data: item });
+  sendResponse(res, 200, item);
 });
 
 export const createOt = catchAsync(async (req, res) => {
