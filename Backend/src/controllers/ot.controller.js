@@ -19,20 +19,20 @@ const calculateHours = (start, end) => {
 export const getAllEmployee = catchAsync(async (req, res) => {
   const { emp_id } = req.query;
   const data = await OtModel.AllEmployee(emp_id);
-  sendResponse(res, 200, data);
+  sendResponse(res, 200, data, "ค้นหาข้อมูล OT สำเร็จ");
 });
 
 export const getRequest = catchAsync(async (req, res) => {
   const data = await OtModel.requestOt();
-  sendResponse(res, 200, data);
+  sendResponse(res, 200, data, "ดึงรายการคำขอ OT สำเร็จ");
 });
 
 export const getOtById = catchAsync(async (req, res) => {
   const { id } = req.params;
   const item = await OtModel.findById(id);
-  if (!item) throw { statusCode: 404, message: "OT not found" };
+  if (!item) throw { statusCode: 404, message: "ไม่พบข้อมูล OT ที่ระบุ" };
 
-  sendResponse(res, 200, item);
+  sendResponse(res, 200, item, "ดึงรายละเอียด OT สำเร็จ");
 });
 
 export const createOt = catchAsync(async (req, res) => {
@@ -42,7 +42,7 @@ export const createOt = catchAsync(async (req, res) => {
   if (!body.start_time || !body.end_time || !body.emp_id) {
     throw {
       statusCode: 400,
-      message: "Require fields: start_time, end_time, emp_id",
+      message: "ข้อมูลไม่ครบถ้วน (start_time, end_time, emp_id)",
     };
   }
 
@@ -73,7 +73,7 @@ export const createOt = catchAsync(async (req, res) => {
   if (statusToSave === 0) {
     const rawTotal = calculateHours(body.start_time, body.end_time);
     const createdOt = await OtModel.create({ ...baseOtData, total: rawTotal });
-    return sendResponse(res, 201, createdOt, "Draft Saved");
+    return sendResponse(res, 201, createdOt, "บันทึกฉบับร่างสำเร็จ");
   }
 
   // Case B: Submit
@@ -94,12 +94,7 @@ export const createOt = catchAsync(async (req, res) => {
     await OtDetailModel.createMany(createdOtResult.id, details);
   }
 
-  sendResponse(
-    res,
-    201,
-    { ...createdOtResult, details },
-    "Created OT Successfully"
-  );
+  sendResponse(res, 201, { ...createdOtResult, details }, "บันทึก OT สำเร็จ");
 });
 
 export const updateOt = catchAsync(async (req, res) => {
@@ -107,7 +102,7 @@ export const updateOt = catchAsync(async (req, res) => {
   const body = req.body;
 
   const exists = await OtModel.findById(id);
-  if (!exists) throw { statusCode: 404, message: "OT id not found" };
+  if (!exists) throw { statusCode: 404, message: "ไม่พบข้อมูล OT ที่ระบุ" };
 
   const statusToSave = body.sts ?? exists.sts;
   const startTime = body.start_time || exists.start_time;
@@ -134,7 +129,7 @@ export const updateOt = catchAsync(async (req, res) => {
 
     // Return early เพื่อลด nesting
     const otData = await OtModel.findById(id);
-    return sendResponse(res, 200, otData);
+    return sendResponse(res, 200, otData, "อัปเดตข้อมูลสำเร็จ");
   }
 
   // Case B: Recalculate Logic
@@ -162,7 +157,12 @@ export const updateOt = catchAsync(async (req, res) => {
 
   const otData = await OtModel.findById(id);
   const detailsData = await OtDetailModel.findByOtId(id);
-  sendResponse(res, 200, { ot: otData, details: detailsData });
+  sendResponse(
+    res,
+    200,
+    { ot: otData, details: detailsData },
+    "คำนวณและบันทึกข้อมูลเรียบร้อย"
+  );
 });
 
 export const submitOtRequest = catchAsync(async (req, res) => {
@@ -198,14 +198,14 @@ export const submitOtRequest = catchAsync(async (req, res) => {
     await OtModel.updateRequestStatus(reqId, "1");
   }
 
-  sendResponse(res, 200, null, "Submitted successfully");
+  sendResponse(res, 200, null, "ส่งคำขออนุมัติสำเร็จ");
 });
 
 export const deleteOt = catchAsync(async (req, res) => {
   const { id } = req.params;
   const exists = await OtModel.findById(id);
-  if (!exists) throw { statusCode: 404, message: "OT not found" };
+  if (!exists) throw { statusCode: 404, message: "ไม่พบข้อมูล OT ที่ระบุ" };
 
   await OtModel.remove(id);
-  sendResponse(res, 200, null, "Deleted");
+  sendResponse(res, 200, null, "ลบข้อมูลสำเร็จ");
 });

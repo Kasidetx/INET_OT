@@ -5,11 +5,11 @@ import { sendResponse } from "../utils/response.js";
 export const createEmp = catchAsync(async (req, res) => {
   const created = await employee.create(req.body);
 
-  sendResponse(res, 201, created);
+  sendResponse(res, 201, created, "สร้างข้อมูลพนักงานสำเร็จ");
 });
 
 export const AllEmp = catchAsync(async (req, res) => {
   const data = await employee.findAll();
 
-  sendResponse(res, 200, data);
+  sendResponse(res, 200, data, "ดึงข้อมูลพนักงานทั้งหมดสำเร็จ");
 });

@@ -13,11 +13,11 @@ export const getDetailsByOtId = catchAsync(async (req, res) => {
   const header = await OtModel.findById(id);
 
   if (!header) {
-    throw { statusCode: 404, message: "OT not found" }; // ✅ Throw Error ให้ Global Handler จับ
+    throw { statusCode: 404, message: "ไม่พบข้อมูล OT ที่ระบุ" }; // ✅ Throw Error ให้ Global Handler จับ
   }
 
   const details = await OtDetailModel.findByOtId(id);
-  sendResponse(res, 200, { ot: header, details });
+  sendResponse(res, 200, { ot: header, details }, "ดึงรายละเอียด OT สำเร็จ");
 });
 
 export const createDetailsForOt = catchAsync(async (req, res) => {
@@ -30,7 +30,7 @@ export const createDetailsForOt = catchAsync(async (req, res) => {
 
   const header = await OtModel.findById(id);
   if (!header) {
-    throw { statusCode: 404, message: "OT not found" };
+    throw { statusCode: 404, message: "ไม่พบข้อมูล OT ที่ระบุ" };
   }
 
   await OtDetailModel.createMany(id, details);
@@ -41,9 +41,14 @@ export const createDetailsForOt = catchAsync(async (req, res) => {
 
   await OtModel.update(id, { ...header, total: totalHour });
 
-  sendResponse(res, 201, {
-    ot_id: id,
-    total_hour: totalHour,
-    details: allDetails,
-  });
+  sendResponse(
+    res,
+    201,
+    {
+      ot_id: id,
+      total_hour: totalHour,
+      details: allDetails,
+    },
+    "สร้างรายละเอียด OT สำเร็จ"
+  );
 });
