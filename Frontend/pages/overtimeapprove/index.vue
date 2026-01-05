@@ -295,7 +295,7 @@ export default {
 
       try {
         const resp = await api.get("/api/ot")
-        const rawData = resp.data?.data || resp.data || []
+        const rawData = resp.data?.result || []
 
         const processedEmployees = rawData.map((emp, index) => {
           let totalHoursVal = 0

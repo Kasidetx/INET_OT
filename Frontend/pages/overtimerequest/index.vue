@@ -17,7 +17,8 @@
       </FilterToolbar>
 
       <RequestTable :items="filteredItems" :loading="loading" :selected.sync="selectedItems"
-        :show-select="filterStatus === 'pending_head' || filterStatus === 'pending_hr'" @view="onView" @bulk-cancel="onBulkCancel" />
+        :show-select="filterStatus === 'pending_head' || filterStatus === 'pending_hr'" @view="onView"
+        @bulk-cancel="onBulkCancel" />
 
       <DialogCancelRequest v-model="cancelDialog" :items="itemsToCancel" @confirm="confirmCancelRequest" />
 
@@ -256,8 +257,8 @@ export default {
       try {
         const response = await api.get(`api/ot/request`);
 
-        if (response.data && response.data.success) {
-          const rawData = response.data.data;
+        if (response.data && response.data.status === 'success') {
+          const rawData = response.data.result;
           const groups = {};
 
           // Grouping
@@ -353,8 +354,8 @@ export default {
       try {
         const response = await api.get(`api/ot/${item.id}/details`);
 
-        if (response.data && response.data.success) {
-          const details = response.data.data.details || [];
+        if (response.data && response.data.status === 'success') {
+          const details = response.data.result.details || [];
           this.relatedItems = details.map((d) => ({
             date: this.$formatDate(d.ot_start_time),
             startTime: this.$formatTime(d.ot_start_time),

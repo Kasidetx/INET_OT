@@ -122,7 +122,7 @@
               <div v-if="entry.selected">
                 <span class="small-label">รายละเอียด</span>
                 <span class="colon">:</span>
-                <v-textarea v-model="entry.description" outlined rows="2" counter="300" maxlength="300" readonly
+                <v-textarea v-model="entry.description" outlined rows="2" counter="300" maxlength="300"
                   placeholder="กรอกรายละเอียด" hide-details="auto" />
               </div>
             </div>
@@ -216,8 +216,8 @@ export default {
           }
         });
 
-        if (response.data && response.data.success) {
-          const employees = response.data.data;
+        if (response.data && response.data.status === 'success') {
+          const employees = response.data.result;
           const flattenedEntries = [];
 
           // 2. วนลูป 2 ชั้นเพื่อแตกข้อมูล (Employee -> Request -> Row)
@@ -293,7 +293,7 @@ export default {
         // ยิง API สร้างรายการ
         const response = await api.post('/api/ot', payload);
 
-        if (response.data && response.data.success) {
+        if (response.data && response.data.status === 'success') {
           // โหลดข้อมูลใหม่ (รายการนี้จะโชว์ขึ้นมาเพราะสถานะเป็น 0)
           this.fetchTimeEntries();
           // alert("รูดบัตรสำเร็จ (Draft)");
@@ -333,7 +333,7 @@ export default {
         });
         console.log("Submit Response:", res);
 
-        if (res.data.success) {
+        if (res.data && res.data.status === 'success') {
           // ปิด Dialog ยืนยัน
           this.dialogConfirm = false;
           // รีโหลดข้อมูลใหม่
