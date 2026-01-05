@@ -427,7 +427,14 @@ export default {
       if (!reasonText.trim()) return;
 
       try {
-        await new Promise(resolve => setTimeout(resolve, 800)); // Sim delay
+        const nextStatus = 6;
+        await Promise.all(this.itemsToCancel.map(item => {
+          return api.put(`/api/ot/${item.id}`, {
+            sts: nextStatus,
+            cancellation_reason: reasonText
+            // ส่ง reason ไปด้วยเผื่อ Backend รองรับการบันทึกเหตุผล
+          });
+        }));
 
         const cancelledRequestIds = new Set(this.itemsToCancel.map(i => i.request_no));
 
