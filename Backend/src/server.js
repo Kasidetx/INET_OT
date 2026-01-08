@@ -8,6 +8,7 @@ import workdayRoutes from './routes/workday.routes.js'
 import otConfigRoutes from './routes/otConfig.routes.js'
 import empRoutes from './routes/emp.routes.js'
 import empTypes from './routes/empTypes.routes.js'
+import approvalRoutes from "./routes/approval.routes.js";
 import { globalErrorHandler } from './middlewares/error.middleware.js'; // ✅ 1. Import global error handler
 dotenv.config()
 
@@ -31,6 +32,7 @@ app.use('/api/workday', workdayRoutes)
 app.use('/api/otconfig', otConfigRoutes)
 app.use('/api/emp', empRoutes)
 app.use('/api/types', empTypes)
+app.use("/api/approval", approvalRoutes);
 // 404
 
 app.use((req, res) => { 
