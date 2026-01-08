@@ -52,7 +52,8 @@ const approvalModel = {
   },
 
   // update ผลอนุมัติ
-  async updateStatus(id, data) {
+  async updateStatus(id, data, conn = null) {
+    // ✅ เพิ่ม parameter conn
     const sql = `
       UPDATE approval
       SET
@@ -62,7 +63,8 @@ const approvalModel = {
         action_by = ?
       WHERE id = ?
     `;
-    const [result] = await db.query(sql, [
+    const executor = conn || db; // ✅ ใช้ executor
+    const [result] = await executor.query(sql, [
       data.approval_status,
       data.reason || null,
       data.action_by,
@@ -71,13 +73,17 @@ const approvalModel = {
     return result.affectedRows;
   },
 
-  async addApprovalLog(data) {
+  async addApprovalLog(data, conn = null) {
     const sql = `
       INSERT INTO approval
       (request_id, level, approve_emp, approval_status, reason, action_at, action_by, created_at)
       VALUES (?, ?, ?, ?, ?, NOW(), ?, NOW())
     `;
-    const [result] = await db.query(sql, [
+
+    // ✅ เลือกใช้ conn ที่ส่งมา หรือใช้ db ปกติ
+    const executor = conn || db;
+
+    const [result] = await executor.query(sql, [
       data.request_id,
       data.level,
       data.approve_emp,
