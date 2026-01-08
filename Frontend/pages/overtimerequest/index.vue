@@ -174,6 +174,8 @@ export default {
       years: [],
       selectedItems: [], // ID ที่ถูกเลือกจาก Table
 
+      mockEmpId: '61306',
+
       // Stats Config
       stats: [
         { label: 'ทั้งหมด', filterKey: 'all', count: 0, icon: 'mdi-file-document-outline', color: '#1565C0', bg: '#E3F2FD' },
@@ -255,7 +257,11 @@ export default {
       this.resetStats();
 
       try {
-        const response = await api.get(`api/ot/request`);
+        const response = await api.get(`api/ot/request`, {
+          params: {
+            emp_id: this.mockEmpId
+          }
+        });
 
         if (response.data && response.data.status === 'success') {
           const rawData = response.data.result;

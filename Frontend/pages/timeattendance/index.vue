@@ -192,7 +192,7 @@ export default {
       overtimeMode: "",
       dialogConfirm: false,
 
-      mockEmpId: '61305',
+      mockEmpId: '61306',
     };
   },
   created() {
@@ -247,7 +247,6 @@ export default {
               });
             }
           });
-          console.log("Flattened Entries:", flattenedEntries);
 
           // 3. อัปเดตเข้าตัวแปรตาราง
           this.timeEntries = flattenedEntries;
