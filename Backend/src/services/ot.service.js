@@ -225,13 +225,32 @@ const OtService = {
       await OtModel.update(
         id,
         {
-          ...data,
-          total: total,
+          // ถ้า data.x มีค่า ให้ใช้ data.x ถ้าไม่มี ให้ใช้ของเดิม (existingOt.x)
+          start_time: data.start_time || existingOt.start_time,
+          end_time: data.end_time || existingOt.end_time,
+
+          // เช็ค !== undefined เพื่อรองรับกรณีส่งค่าว่าง "" มา
+          description:
+            data.description !== undefined
+              ? data.description
+              : existingOt.description,
+
           emp_id: data.emp_id || existingOt.emp_id,
           created_by: data.created_by || existingOt.created_by,
+          total: total,
         },
         conn
       );
+
+      if (data.sts !== undefined && existingOt.request_id) {
+        // ✅ ส่ง 4 ตัวแปร: (id, status, conn, reason)
+        await OtModel.updateRequestStatus(
+          existingOt.request_id,
+          data.sts,
+          conn, // ตัวที่ 3: Connection
+          data.cancellation_reason || null // ตัวที่ 4: Reason (ถ้าไม่มีให้ส่ง null ไปล้างค่าเก่า)
+        );
+      }
 
       // Update Details (ถ้ามีการคำนวณใหม่)
       if (details.length > 0) {

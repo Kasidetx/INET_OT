@@ -1,49 +1,23 @@
 import db from "../config/db.js";
-import dayjs from "dayjs";
-import {
-  WORK_TIME,
-  DAY_TYPE,
-  OT_PERIOD,
-  OT_STATUS,
-} from "../config/constants.js";
 
 const OtModel = {
   async AllEmployee(empId) {
-    let joinCondition = "e.emp_id = v.emp_id";
-    if (!empId) {
-      joinCondition += ` AND v.req_status != '${OT_STATUS.DRAFT}'`;
-    }
+    // เรียก Stored Procedure ง่ายๆ บรรทัดเดียว
+    // ถ้า empId ไม่มีค่า ให้ส่ง null ไป
+    const sql = `CALL GetEmployeeOTList(?)`;
+    const [result] = await db.query(sql, [empId || null]);
 
-    let sql = `
-    SELECT 
-        e.id AS employee_id,
-        e.emp_id AS employee_code,
-        e.name AS employee_name,
-        e.position,
-        e.request AS total_requests_count,
-        e.total_hour AS total_ot_hour_summary,
-        v.ot_id,
-        v.request_id,
-        v.doc_no,
-        v.description,
-        v.total AS ot_duration,
-        v.start_time,
-        v.end_time,
-        v.created_at,
-        v.req_status
-    FROM view_employee e
-    LEFT JOIN view_emp_ot v ON ${joinCondition}
-    `;
-    const params = [];
+    // ผลลัพธ์ของ Stored Procedure จะอยู่ใน array index ที่ 0
+    const rows = result[0];
 
-    if (empId) {
-      sql += ` WHERE e.emp_id = ? `;
-      params.push(empId);
-    }
-
-    sql += ` ORDER BY e.id ASC, v.created_at DESC`;
-    const [flatRows] = await db.query(sql, params);
-    return this.groupEmployeeData(flatRows);
+    // แปลง JSON String เป็น Object (เผื่อ Driver ส่งมาเป็น String)
+    return rows.map((row) => ({
+      ...row,
+      requests:
+        typeof row.requests === "string"
+          ? JSON.parse(row.requests)
+          : row.requests,
+    }));
   },
 
   groupEmployeeData(rows) {
@@ -79,24 +53,10 @@ const OtModel = {
     return Array.from(map.values());
   },
 
-  async requestOt(empId = null) {
-    // ✅ รับ parameter empId
-    // เริ่มต้น SQL พื้นฐาน
-    let sql = `
-      SELECT ot_id AS id, request_id, doc_no, description, start_time, end_time, total, req_status AS sts
-      FROM view_emp_ot 
-      WHERE req_status != '${OT_STATUS.DRAFT}'
-    `;
-
-    const params = [];
-
-    if (empId) {
-      sql += " AND emp_id = ? ";
-      params.push(empId);
-    }
-
-    const [rows] = await db.query(sql, params);
-    return rows;
+  async requestOt(empId) {
+    const sql = `CALL GetMyRequests(?)`;
+    const [result] = await db.query(sql, [empId]);
+    return result[0]; // ส่งผลลัพธ์กลับได้เลย ไม่ต้อง map แล้ว
   },
 
   async findRequestById(id) {
@@ -172,10 +132,28 @@ const OtModel = {
     return result.affectedRows > 0;
   },
 
-  async updateRequestStatus(requestId, status, conn = null) {
-    let sql = `UPDATE request SET sts = ? WHERE id = ?`;
+  async updateRequestStatus(
+    requestId,
+    status,
+    conn = null,
+    reason = undefined
+  ) {
+    let sql = `UPDATE request SET sts = ?`;
+    const params = [status];
+
+    // ✅ เช็ค: ถ้ามีการส่ง reason มา (ไม่ว่าจะ null หรือข้อความ) ค่อยอัปเดต
+    // ถ้าไม่ได้ส่งมา (undefined) ก็จะไม่ไปยุ่งกับคอลัมน์ reason เดิม
+    if (reason !== undefined) {
+      sql += `, reason = ?`;
+      params.push(reason);
+    }
+
+    sql += ` WHERE id = ?`;
+    params.push(requestId);
+
     const executor = conn || db;
-    const [result] = await executor.query(sql, [status, requestId]);
+    const [result] = await executor.query(sql, params);
+
     return result.affectedRows > 0;
   },
 
