@@ -1,6 +1,11 @@
 import db from "../config/db.js";
 import dayjs from "dayjs";
-import { WORK_TIME, DAY_TYPE, OT_PERIOD, OT_STATUS } from "../config/constants.js";
+import {
+  WORK_TIME,
+  DAY_TYPE,
+  OT_PERIOD,
+  OT_STATUS,
+} from "../config/constants.js";
 
 // --- Private Helpers (Logic Only) ---
 const _getDayType = (dateObj, holidayList) => {
@@ -27,7 +32,7 @@ const _calculateNetHours = (duration, config) => {
   ) {
     net -= parseInt(config.break_minutes) / 60.0;
   }
-  
+
   // ✅ จุดสำคัญ: ใช้ toFixed(2) เพื่อเก็บทศนิยม 2 ตำแหน่ง (เช่น 0.50)
   // parseFloat จะแปลงกลับเป็น number (เช่น 0.5) ไม่มีการปัดเป็นจำนวนเต็ม
   return Math.max(0, parseFloat(net.toFixed(2)));
@@ -72,10 +77,11 @@ const OtModel = {
     return this.groupEmployeeData(flatRows);
   },
 
-  async updateRequestStatus(requestId, status, description = null) {
+  async updateRequestStatus(requestId, status, description = null, conn = null) {
     let sql = `UPDATE request SET sts = ? WHERE id = ?`;
     let params = [status, requestId];
-    const [result] = await db.query(sql, params);
+    const executor = conn || db;
+    const [result] = await executor.query(sql, params);
     return result.affectedRows > 0;
   },
 
@@ -122,7 +128,7 @@ const OtModel = {
 
       // ✅ คำนวณเป็นทศนิยมจริง (นาที / 60) เช่น 30/60 = 0.5
       const segmentDuration = nextCursor.diff(currentCursor, "minute") / 60.0;
-      
+
       if (segmentDuration > 0) {
         const matchedConfig = allConfigs.find(
           (cfg) =>
@@ -202,14 +208,23 @@ const OtModel = {
     return Array.from(employeesMap.values());
   },
 
-  async requestOt() {
-    const sql = `
+  async requestOt(empId = null) {
+    // ✅ รับ parameter empId
+    // เริ่มต้น SQL พื้นฐาน
+    let sql = `
       SELECT ot_id AS id, request_id, doc_no, description, start_time, end_time, total, req_status AS sts
       FROM view_emp_ot 
       WHERE req_status != '${OT_STATUS.DRAFT}'
-      ORDER BY ot_id ASC
     `;
-    const [rows] = await db.query(sql);
+
+    const params = [];
+
+    if (empId) {
+      sql += " AND emp_id = ? ";
+      params.push(empId);
+    }
+
+    const [rows] = await db.query(sql, params);
     return rows;
   },
 
@@ -226,12 +241,14 @@ const OtModel = {
     return rows[0]?.doc_no;
   },
 
-  async createRequest(data) {
+  async createRequest(data, conn = null) {
     const sql = `
       INSERT INTO request (doc_no, title, type, sts, created_by, created_at) 
       VALUES (?, ?, ?, ?, ?, NOW())
     `;
-    const [result] = await db.query(sql, [
+    // ✅ แก้ไข: ถ้ามี conn ให้ใช้ conn (transaction) ถ้าไม่มีใช้ db ปกติ
+    const executor = conn || db;
+    const [result] = await executor.query(sql, [
       data.doc_no,
       data.title,
       data.type,
@@ -241,7 +258,7 @@ const OtModel = {
     return result.insertId;
   },
 
-  async create(data) {
+  async create(data, conn = null) {
     const sql = `
       INSERT INTO ot (request_id, start_time, end_time, description, emp_id, total, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -255,11 +272,13 @@ const OtModel = {
       data.total || 0,
       data.created_by,
     ];
-    const [result] = await db.query(sql, values);
+    // ✅ แก้ไข: ใช้ executor
+    const executor = conn || db;
+    const [result] = await executor.query(sql, values);
     return { id: result.insertId, ...data };
   },
 
-  async update(id, data) {
+  async update(id, data, conn = null) {
     const sql = `
       UPDATE ot
       SET start_time = ?, end_time = ?, description = ?, emp_id = ?, total = ?, created_by = ?
@@ -274,7 +293,8 @@ const OtModel = {
       data.created_by,
       id,
     ];
-    const [result] = await db.query(sql, values);
+    const executor = conn || db;
+    const [result] = await executor.query(sql, values);
     return result.affectedRows > 0;
   },
 

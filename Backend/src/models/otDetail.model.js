@@ -1,14 +1,11 @@
-// src/models/otDetail.model.js
 import db from "../config/db.js";
 
 const OtDetailModel = {
-  // ดึงรายการ detail ทั้งหมด
   async findAll() {
     const [rows] = await db.query("SELECT * FROM ot_detail ORDER BY id ASC");
     return rows;
   },
 
-  // ดึงรายการ detail ทั้งหมดของ OT ใบหนึ่ง
   async findByOtId(otId) {
     const [rows] = await db.query(
       "SELECT * FROM ot_detail WHERE ot_id = ? ORDER BY id ASC",
@@ -17,13 +14,12 @@ const OtDetailModel = {
     return rows;
   },
 
-  // สร้างแถวเดียว
-  async createOne(otId, detail) {
+  // ✅ แก้ไข: เพิ่ม parameter conn
+  async createOne(otId, detail, conn = null) {
     const sql = `
       INSERT INTO ot_detail (ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate)
       VALUES (?, ?, ?, ?, ?)
     `;
-
     const values = [
       otId,
       detail.ot_start_time,
@@ -31,13 +27,15 @@ const OtDetailModel = {
       detail.ot_hour,
       detail.ot_rate,
     ];
-
-    const [result] = await db.query(sql, values);
+    
+    // ✅ ใช้ conn ถ้ามีส่งมา (Executor)
+    const executor = conn || db;
+    const [result] = await executor.query(sql, values);
     return { id: result.insertId, ot_id: otId, ...detail };
   },
 
-  // สร้างหลายแถวรวดเดียว (array)
-  async createMany(otId, details) {
+  // ✅ แก้ไข: เพิ่ม parameter conn
+  async createMany(otId, details, conn = null) {
     const sql = `
       INSERT INTO ot_detail (ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate)
       VALUES ?
@@ -50,7 +48,9 @@ const OtDetailModel = {
       d.ot_rate,
     ]);
 
-    const [result] = await db.query(sql, [values]);
+    // ✅ ใช้ executor เพื่อให้ Query นี้อยู่ใน Transaction เดียวกับ Service
+    const executor = conn || db;
+    const [result] = await executor.query(sql, [values]);
     return result;
   },
 };

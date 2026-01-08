@@ -3,6 +3,7 @@ import OtModel from "../models/ot.model.js";
 import OtDetailModel from "../models/otDetail.model.js";
 import OtConfigModel from "../models/otConfig.model.js";
 import HolidayModel from "../models/holiday.model.js";
+import OtService from "../services/ot.service.js";
 import { catchAsync } from "../utils/catchAsync.js"; // Import ตัวที่สร้างใหม่
 import { sendResponse } from "../utils/response.js"; //
 
@@ -23,7 +24,8 @@ export const getAllEmployee = catchAsync(async (req, res) => {
 });
 
 export const getRequest = catchAsync(async (req, res) => {
-  const data = await OtModel.requestOt();
+  const { emp_id } = req.query;
+  const data = await OtModel.requestOt(emp_id);
   sendResponse(res, 200, data, "ดึงรายการคำขอ OT สำเร็จ");
 });
 
@@ -37,8 +39,8 @@ export const getOtById = catchAsync(async (req, res) => {
 
 export const createOt = catchAsync(async (req, res) => {
   const body = req.body;
-  delete body.id;
 
+  // Validation เบื้องต้น
   if (!body.start_time || !body.end_time || !body.emp_id) {
     throw {
       statusCode: 400,
@@ -46,159 +48,49 @@ export const createOt = catchAsync(async (req, res) => {
     };
   }
 
-  const typeId = body.type || 1;
-  const statusToSave = body.sts ?? 1;
-
-  // 1. Prepare Header Data
+  // เตรียม Doc No
   const lastDoc = await OtModel.getLastRequestDocNo();
   const docNo = OtModel.generateNextDocNo(lastDoc);
 
-  const requestPkId = await OtModel.createRequest({
+  // ✅ เรียกใช้ Service แทน Logic เดิม
+  // ส่ง leader_emp_id ไปด้วย (Frontend ต้องส่งมา หรือไป Query หาจาก emp_id)
+  const result = await OtService.createOt({
+    ...body,
     doc_no: docNo,
-    title: body.description || "ขออนุมัติทำโอที",
-    type: typeId,
-    sts: statusToSave,
-    created_by: body.emp_id,
+    // ถ้า Frontend ไม่ส่ง sts มา ให้ default เป็น 1 (Submit)
+    sts: body.sts ?? 1,
   });
 
-  const baseOtData = {
-    ...body,
-    request_id: requestPkId,
-    start_time: dayjs(body.start_time).format("YYYY-MM-DD HH:mm:ss"),
-    end_time: dayjs(body.end_time).format("YYYY-MM-DD HH:mm:ss"),
-    created_by: body.emp_id,
-  };
-
-  // Case A: Draft
-  if (statusToSave === 0) {
-    const rawTotal = calculateHours(body.start_time, body.end_time);
-    const createdOt = await OtModel.create({ ...baseOtData, total: rawTotal });
-    return sendResponse(res, 201, createdOt, "บันทึกฉบับร่างสำเร็จ");
-  }
-
-  // Case B: Submit
-  // ✅ เรียกใช้ผ่าน Model โดยตรง
-  const holidayList = await HolidayModel.getHolidayDateList();
-  const allConfigs = await OtConfigModel.findAll();
-
-  const { total, details } = OtModel.calculateOtDetails(
-    body.start_time,
-    body.end_time,
-    typeId,
-    allConfigs,
-    holidayList
-  );
-
-  const createdOtResult = await OtModel.create({ ...baseOtData, total });
-  if (details.length > 0) {
-    await OtDetailModel.createMany(createdOtResult.id, details);
-  }
-
-  sendResponse(res, 201, { ...createdOtResult, details }, "บันทึก OT สำเร็จ");
+  sendResponse(res, 201, result, "บันทึก OT และสร้างรายการอนุมัติสำเร็จ");
 });
 
 export const updateOt = catchAsync(async (req, res) => {
   const { id } = req.params;
   const body = req.body;
 
-  const exists = await OtModel.findById(id);
-  if (!exists) throw { statusCode: 404, message: "ไม่พบข้อมูล OT ที่ระบุ" };
+  // ✅ เรียกใช้ Service Update
+  const result = await OtService.updateOt(id, body);
 
-  const statusToSave = body.sts ?? exists.sts;
-  const startTime = body.start_time || exists.start_time;
-  const endTime = body.end_time || exists.end_time;
-  const isTimeChanged = body.start_time || body.end_time;
-
-  if (exists.request_id) {
-    await OtModel.updateRequestStatus(exists.request_id, statusToSave);
-  }
-
-  // Case A: Draft / No Time Change
-  if (statusToSave === 0 || !isTimeChanged) {
-    let rawTotal = isTimeChanged
-      ? calculateHours(startTime, endTime)
-      : exists.total;
-
-    const updated = await OtModel.update(id, {
-      ...exists,
-      start_time: dayjs(startTime).format("YYYY-MM-DD HH:mm:ss"),
-      end_time: dayjs(endTime).format("YYYY-MM-DD HH:mm:ss"),
-      description: body.description ?? exists.description,
-      total: rawTotal,
-    });
-
-    // Return early เพื่อลด nesting
-    const otData = await OtModel.findById(id);
-    return sendResponse(res, 200, otData, "อัปเดตข้อมูลสำเร็จ");
-  }
-
-  // Case B: Recalculate Logic
-  // ✅ เรียกใช้ผ่าน Model โดยตรง
-  const holidayList = await HolidayModel.getHolidayDateList();
-  const allConfigs = await OtConfigModel.findAll();
-
-  const { total, details } = OtModel.calculateOtDetails(
-    startTime,
-    endTime,
-    body.type || exists.type || 1,
-    allConfigs,
-    holidayList
-  );
-
-  if (details.length > 0) await OtDetailModel.createMany(id, details);
-
-  await OtModel.update(id, {
-    ...exists,
-    start_time: dayjs(startTime).format("YYYY-MM-DD HH:mm:ss"),
-    end_time: dayjs(endTime).format("YYYY-MM-DD HH:mm:ss"),
-    description: body.description ?? exists.description,
-    total: total,
-  });
-
-  const otData = await OtModel.findById(id);
-  const detailsData = await OtDetailModel.findByOtId(id);
-  sendResponse(
-    res,
-    200,
-    { ot: otData, details: detailsData },
-    "คำนวณและบันทึกข้อมูลเรียบร้อย"
-  );
+  sendResponse(res, 200, result, "อัปเดตข้อมูลสำเร็จ");
 });
 
 export const submitOtRequest = catchAsync(async (req, res) => {
-  const { items } = req.body;
-  if (!items || items.length === 0)
-    throw { statusCode: 400, message: "No items selected" };
+  // 1. รับค่าจาก Frontend
+  const { items, leader_emp_id } = req.body;
 
-  const allConfigs = await OtConfigModel.findAll();
-  const holidayList = await HolidayModel.getHolidayDateList();
-  const processedRequestIds = new Set();
-
-  // Parallel Processing (Optional: use Promise.all for better performance if items are many)
-  for (const item of items) {
-    const otData = await OtModel.findById(item.id);
-    if (!otData) continue;
-
-    const { total, details } = OtModel.calculateOtDetails(
-      otData.start_time,
-      otData.end_time,
-      1, // default type
-      allConfigs,
-      holidayList
-    );
-
-    if (details.length > 0) await OtDetailModel.createMany(otData.id, details);
-
-    await OtModel.update(otData.id, { ...otData, total });
-    if (otData.request_id) processedRequestIds.add(otData.request_id);
+  // 2. Validate
+  if (!items || items.length === 0) {
+    throw { statusCode: 400, message: "กรุณาเลือกรายการที่ต้องการส่งคำขอ" };
+  }
+  if (!leader_emp_id) {
+    throw { statusCode: 400, message: "กรุณาระบุรหัสหัวหน้างาน (leader_emp_id)" };
   }
 
-  // Update Request Statuses
-  for (const reqId of processedRequestIds) {
-    await OtModel.updateRequestStatus(reqId, "1");
-  }
+  // 3. เรียก Service ให้ทำงาน
+  const result = await OtService.submitOtRequest(items, leader_emp_id);
 
-  sendResponse(res, 200, null, "ส่งคำขออนุมัติสำเร็จ");
+  // 4. ส่ง Response กลับ
+  sendResponse(res, 200, result, "ส่งคำขอและสร้างรายการอนุมัติสำเร็จ");
 });
 
 export const deleteOt = catchAsync(async (req, res) => {
