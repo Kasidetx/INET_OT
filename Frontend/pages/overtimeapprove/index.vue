@@ -215,65 +215,58 @@ export default {
     },
 
     async confirmAction({ type, reason, items }) {
-      console.log('🔥 confirmAction CALLED')
+      console.log('🔥 confirmAction CALLED', type)
 
-      // 1. ตรวจสอบข้อมูลที่ถูกเลือก (Items)
+      // 1. ตรวจสอบข้อมูลที่ถูกเลือก
       const selected = Array.isArray(items) ? items : (this.selectedRequests || [])
 
-      // กรองเอาเฉพาะรายการที่มี otId (ป้องกัน Error)
-      const validItems = selected.filter(it => it.otId)
+      // ✅ กรองเอาเฉพาะรายการที่มี requestId
+      const validItems = selected.filter(it => it.requestId)
 
       if (validItems.length === 0) {
-        console.warn('❌ ไม่พบรายการที่มี otId')
+        console.warn('❌ ไม่พบรายการที่เลือก หรือไม่มี Request ID')
         this.actionDialog = false
         return
       }
 
-      console.log(`Processing ${validItems.length} items...`)
+      // ✅ กำหนดคนอนุมัติ (Mock ตาม Tab ที่เลือกอยู่)
+      // ถ้าอยู่ Tab รอหัวหน้า -> ให้ action_by เป็น head001
+      // ถ้าอยู่ Tab รอ HR -> ให้ action_by เป็น hr001
+      let actionBy = 'unknown'
+      if (this.statusFilter === 'pending_head') actionBy = 'head001'
+      else if (this.statusFilter === 'pending_hr') actionBy = 'hr001'
+      else {
+        // กรณีอยู่หน้า All ให้เดาจากสถานะของ Item แรก
+        const firstStatus = Number(validItems[0].status)
+        actionBy = firstStatus === 1 ? 'head001' : 'hr001'
+      }
 
       try {
-        // 2. วนลูปยิง API ทีละรายการ (หรือจะทำ Backend ให้รับเป็น Array ก็ได้ แต่วิธีนี้ชัวร์สุดกับ Backend เดิม)
+        // 2. วนลูปยิง API Approval
         await Promise.all(
           validItems.map(item => {
-            const currentStatus = Number(item.status) // สถานะปัจจุบัน
-            let nextStatus = currentStatus // สถานะถัดไป (Default)
+            console.log(`➡️ ${type.toUpperCase()} Request ID: ${item.requestId} by ${actionBy}`)
 
-            // --- Logic เปลี่ยนสถานะ ---
-            if (type === 'approve') {
-              // กรณีอนุมัติ
-              if (currentStatus === 1) nextStatus = 2      // รอหัวหน้า -> รอ HR
-              else if (currentStatus === 2) nextStatus = 3 // รอ HR -> อนุมัติ
-            } else {
-              // กรณีไม่อนุมัติ
-              if (currentStatus === 1) nextStatus = 4      // รอหัวหน้า -> หัวหน้าไม่อนุมัติ
-              else if (currentStatus === 2) nextStatus = 5 // รอ HR -> HR ไม่อนุมัติ
-            }
-
-            // ถ้าสถานะไม่เปลี่ยน (เช่น กดผิด) ไม่ต้องยิง API
-            if (nextStatus === currentStatus) return Promise.resolve()
-
-            console.log(`➡️ Update OT ID: ${item.otId} | Status: ${currentStatus} -> ${nextStatus}`)
-
-            // ส่งข้อมูลไปอัปเดต
-            return api.put(`/api/ot/${item.otId}`, {
-              sts: nextStatus,
-              // ส่ง reason ไปด้วยเผื่อ Backend รองรับการบันทึกเหตุผล
-              description: reason ? `${item.detailTitle || ''} (หมายเหตุ: ${reason})` : undefined
+            // ✅ ยิงเข้า Route Approval ที่เราเตรียมไว้ใน Backend
+            return api.post(`/api/approval/${item.requestId}`, {
+              status: type, // ส่ง 'approve' หรือ 'reject'
+              reason: reason,
+              action_by: actionBy
             })
           })
         )
 
-        console.log('✅ Update All Success')
+        console.log('✅ Action Success')
 
         // 3. ปิด Dialog และโหลดข้อมูลใหม่
         this.successDialog = true
-        this.selectedRequests = [] // เคลียร์รายการที่เลือก
-        this.tableKey++ // บังคับ Rerender ตาราง
-        await this.fetchData() // ดึงข้อมูลใหม่จาก DB
+        this.selectedRequests = []
+        this.tableKey++
+        await this.fetchData()
 
       } catch (err) {
-        console.error("❌ Update OT error:", err)
-        alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง')
+        console.error("❌ Action Error:", err)
+        alert('เกิดข้อผิดพลาด: ' + (err.response?.data?.message || err.message))
       }
     },
 
@@ -300,11 +293,11 @@ export default {
         const processedEmployees = rawData.map((emp, index) => {
           let totalHoursVal = 0
           console.log(emp)
-          const requests = (emp.ot_requests || []).map((ot, idx) => {
-            const duration = Number(ot.ot_duration || 0)
+          const requests = (emp.requests || []).map((ot, idx) => {
+            const duration = Number(ot.duration || 0)
             totalHoursVal += duration
 
-            const statusId = Number(ot.sts) || 1
+            const statusId = Number(ot.status) || 1
 
             // Count Stats
             this.stats[0].count++

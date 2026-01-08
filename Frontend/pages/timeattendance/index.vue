@@ -223,17 +223,18 @@ export default {
           // 2. วนลูป 2 ชั้นเพื่อแตกข้อมูล (Employee -> Request -> Row)
           employees.forEach(emp => {
             // เช็คว่าพนักงานคนนี้มีรายการ OT ไหม
-            if (Array.isArray(emp.ot_requests) && emp.ot_requests.length > 0) {
+            if (Array.isArray(emp.requests) && emp.requests.length > 0) {
 
-              emp.ot_requests.forEach(req => {
-                const status = Number(req.sts);
+              emp.requests.forEach(req => {
+                // 2. เปลี่ยน req.sts -> req.status
+                const status = Number(req.status);
                 if (status === 0) {
                   flattenedEntries.push({
                     // --- ส่วนข้อมูลหลักที่ใช้แสดงผล ---
                     date: req.created_at,     // วันที่ (เช่น 24/12/2568)
                     checkIn: req.start_time,  // เวลาเข้า (เช่น 08:30 น.)
                     checkOut: req.end_time,   // เวลาออก (เช่น 17:30 น.)
-                    status: req.sts,    // สถานะ (เช่น รออนุมัติ)
+                    status: req.status,    // สถานะ (เช่น รออนุมัติ)
                     description: req.description || "-",        // รายละเอียด
 
                     // --- ส่วนที่ต้องใช้สำหรับ Logic (Checkbox, Edit, Status) ---
