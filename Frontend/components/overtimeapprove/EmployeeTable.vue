@@ -74,7 +74,6 @@ export default {
         { text: "รหัสพนักงาน", value: "empCode", sortable: false, class: "grey--text text--darken-2" },
         { text: "ชื่อ-นามสกุล", value: "name", sortable: false, class: "font-weight-bold" },
         { text: "ตำแหน่ง", value: "position", sortable: false },
-        { text: "บริษัท", value: "company", sortable: false },
         { text: "จำนวนรายการ", value: "itemsCount", align: "center", sortable: false },
         { text: "รวมชั่วโมง", value: "totalHours", align: "center", sortable: false },
         { text: "", value: "data-table-expand", align: "end" }

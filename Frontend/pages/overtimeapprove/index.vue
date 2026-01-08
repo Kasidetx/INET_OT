@@ -292,12 +292,11 @@ export default {
 
         const processedEmployees = rawData.map((emp, index) => {
           let totalHoursVal = 0
-          console.log(emp)
-          const requests = (emp.requests || []).map((ot, idx) => {
-            const duration = Number(ot.duration || 0)
+          const requests = (emp.requests || []).filter(r => r).map((ot, idx) => {
+            const duration = Number(ot.duration || ot.total || 0)
             totalHoursVal += duration
 
-            const statusId = Number(ot.status) || 1
+            const statusId = Number(ot.status || ot.req_status || 1)
 
             // Count Stats
             this.stats[0].count++
@@ -336,7 +335,6 @@ export default {
             empCode: emp.employee_code || "-",
             name: emp.employee_name || "-",
             position: emp.position || "-",
-            company: emp.company || "iRecruit",
             itemsCount: requests.length,
             totalHours: totalHoursVal > 0 ? `${totalHoursVal} ชั่วโมง` : '-',
             requests

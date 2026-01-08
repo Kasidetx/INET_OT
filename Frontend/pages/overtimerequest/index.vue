@@ -54,9 +54,12 @@
                   <v-col cols="2" class="black--text text--darken-1" style="max-width: 140px;">หมายเหตุ</v-col>
                   <v-col cols="1" class="text-center" style="max-width: 40px;">:</v-col>
                   <v-col class="black--text">
-                    {{ selectedItem.status === 6 ? (selectedItem.cancellation_reason || 'ยกเลิกคำร้องขอเบิกค่าล่วงเวลา')
-                      :
-                      (selectedItem.title || '-') }}
+                    <span v-if="[4, 5, 6].includes(selectedItem.status)" class="red--text">
+                      {{ selectedItem.cancellation_reason || '-' }}
+                    </span>
+                    <span v-else>
+                      {{ selectedItem.title || '-' }}
+                    </span>
                   </v-col>
                 </v-row>
               </v-col>
@@ -273,7 +276,11 @@ export default {
             if (!groups[key]) {
               groups[key] = { items: [], totalHours: 0 };
             }
-            const hours = parseFloat(item.total) || 0;
+
+            // ❌ แก้ไขจุดที่ 1: เปลี่ยน item.total เป็น item.duration
+            // (หรือใช้ || เพื่อรองรับทั้งแบบเก่าและใหม่)
+            const hours = parseFloat(item.duration || item.total) || 0;
+
             groups[key].items.push(item);
             groups[key].totalHours += hours;
           });
@@ -281,9 +288,11 @@ export default {
           // Mapping
           const records = Object.values(groups).map(g => {
             const first = g.items[0];
+
+            const statusId = Number(first.status);
+
             const totalH = g.totalHours;
             const formattedHours = Number.isInteger(totalH) ? totalH : totalH.toFixed(2);
-            const statusId = Number(first.sts);
 
             // Count Stats
             this.stats[0].count++;
@@ -295,17 +304,22 @@ export default {
             else if (statusId === 6) this.stats[6].count++;
 
             return {
-              id: first.id,
+              id: first.id || first.ot_id, // รองรับชื่อจาก SP
               request_no: first.request_id || "-",
-              docs_no: first.doc_no || first.docs_no || "-",
-              title: first.description || "-",
+              docs_no: first.doc_no || first.docs_no || "-", // รองรับชื่อจาก SP
+              title: first.description || "-", // SP ส่งมาเป็น description
+
               startDate: this.$formatDate(first.start_time),
               startTime: this.$formatTime(first.start_time),
               endDate: this.$formatDate(first.end_time),
               endTime: this.$formatTime(first.end_time),
+
               hours: `${formattedHours} ชั่วโมง`,
               status: statusId,
+
+              // ✅ ใส่ค่า Reason ใหม่
               cancellation_reason: first.cancellation_reason,
+
               children: g.items
             };
           });
@@ -389,7 +403,7 @@ export default {
       groupItems.forEach(group => {
         if (group.children) {
           allChildren = allChildren.concat(group.children.map(c => ({
-            id: c.id,
+            id: c.ot_id,
             request_no: c.request_id,
             docs_no: c.doc_no,
             startDate: this.$formatDate(c.start_time),
@@ -401,29 +415,6 @@ export default {
 
       this.cancellationReason = "";
       this.itemsToCancel = allChildren;
-      this.cancelDialog = true;
-    },
-
-    async onCancelRequest() {
-      this.cancellationReason = "";
-
-      if (this.selectedItem) {
-        if (this.selectedItem.children) {
-          this.itemsToCancel = this.selectedItem.children.map(c => ({
-            id: c.id,
-            request_no: c.request_id,
-            // 🔥 Map docs_no จากแม่
-            docs_no: c.doc_no || this.selectedItem.docs_no,
-            startDate: this.$formatDate(c.start_time),
-            startTime: this.$formatTime(c.start_time),
-            endTime: this.$formatTime(c.end_time)
-          }));
-        } else {
-          this.itemsToCancel = [this.selectedItem];
-        }
-      }
-
-      this.viewDialog = false;
       this.cancelDialog = true;
     },
 

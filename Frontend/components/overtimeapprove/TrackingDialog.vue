@@ -139,8 +139,7 @@ export default {
         },
 
         showStep2() {
-            // ถ้าสถานะเป็น 1 (รอหัวหน้า) หรือ 4 (หัวหน้าไม่อนุมัติ) -> ยังไม่ถึง HR
-            return ![1, 4].includes(this.statusId)
+            return true; // Parallel flow, show both always
         },
 
         // Chip สถานะด้านบนสุด
@@ -160,21 +159,27 @@ export default {
         // Logic สถานะสำหรับ Step 1 (หัวหน้า)
         step1() {
             const s = this.statusId
-            if (s === 1) return this.makeStep("pending")   // กำลังรอ
-            if (s === 2 || s === 3 || s === 5) return this.makeStep("approved") // ผ่านแล้ว (ส่งต่อให้ HR หรือจบแล้ว)
-            if (s === 4) return this.makeStep("rejected")  // ตกม้าตายตรงนี้
+            // Cancellation
             if (s === 6) return this.makeStep("cancelled")
-            return this.makeStep("waiting")
+            // Rejection
+            if (s === 4) return this.makeStep("rejected")
+            
+            // Approval (Check flag first, fallback to status which implies approval)
+            if (this.item?.approvedHead || s === 2 || s === 3 || s === 5) return this.makeStep("approved")
+            
+            return this.makeStep("pending")
         },
 
         // Logic สถานะสำหรับ Step 2 (HR)
         step2() {
             const s = this.statusId
-            if (s === 2) return this.makeStep("pending")   // ถึงคิว HR แล้ว
-            if (s === 3) return this.makeStep("approved")  // HR อนุมัติแล้ว
-            if (s === 5) return this.makeStep("rejected")  // HR ไม่อนุมัติ
             if (s === 6) return this.makeStep("cancelled")
-            return this.makeStep("waiting") // ยังไม่ถึงคิว
+            if (s === 5) return this.makeStep("rejected")
+
+            // Approval
+            if (this.item?.approvedHr || s === 3) return this.makeStep("approved")
+            
+            return this.makeStep("pending")
         },
     },
     methods: {

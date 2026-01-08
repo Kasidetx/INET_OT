@@ -1,12 +1,6 @@
 <template>
-  <v-chip
-    small
-    class="status-chip font-weight-bold px-3"
-    :color="statusConfig.bg"
-    :text-color="statusConfig.text"
-    style="border-radius: 6px; border: 1px solid transparent;"
-    :style="{ borderColor: statusConfig.border }"
-  >
+  <v-chip small class="status-chip font-weight-bold px-3" :color="statusConfig.bg" :text-color="statusConfig.text"
+    style="border-radius: 6px; border: 1px solid transparent;" :style="{ borderColor: statusConfig.border }">
     <v-icon left x-small class="mr-1" :color="statusConfig.text">
       mdi-circle
     </v-icon>
@@ -30,50 +24,50 @@ export default {
     statusConfig() {
       // ใช้ชุดสีที่ Modern ขึ้น (Emerald, Amber, Rose, Slate)
       const map = {
-        0: { 
-          label: "รอดำเนินการ", 
+        0: {
+          label: "รอดำเนินการ",
           bg: "#FFFBEB", // เหลืองอ่อนมาก
           text: "#B45309", // ส้มเข้ม
           border: "#FDE68A" // ขอบเหลืองจางๆ
         },
-        1: { 
-          label: "รอหัวหน้าอนุมัติ", 
+        1: {
+          label: "รอหัวหน้าอนุมัติ",
           bg: "#FFFBEB", // เหลืองอ่อนมาก
           text: "#B45309", // ส้มเข้ม
           border: "#FDE68A" // ขอบเหลืองจางๆ
         },
-        2: { 
-          label: "รอ HR อนุมัติ", 
+        2: {
+          label: "รอ HR อนุมัติ",
           bg: "#FFFBEB", // เหลืองอ่อนมาก
           text: "#B45309", // ส้มเข้ม
           border: "#FDE68A" // ขอบเหลืองจางๆ
         },
-        3: { 
-          label: "อนุมัติ", 
+        3: {
+          label: "อนุมัติ",
           bg: "#ECFDF5", // เขียว Emerald อ่อน
           text: "#047857", // เขียวเข้ม
-          border: "#A7F3D0" 
+          border: "#A7F3D0"
         },
-        4: { 
-          label: "HR ไม่อนุมัติ", 
-          bg: "#FEF2F2", // แดง Rose อ่อน
-          text: "#B91C1C", // แดงเข้ม
-          border: "#FECACA" 
-        },
-        5: { 
-          label: "หัวหน้าไม่อนุมัติ", 
+        4: {
+          label: "หัวหน้าไม่อนุมัติ",
           bg: "#FEF2F2", // แดงอ่อน
           text: "#8B0000", // แดงเข้ม
-          border: "#FECACA" 
+          border: "#FECACA"
         },
-        6: { 
-          label: "ยกเลิก", 
+        5: {
+          label: "HR ไม่อนุมัติ",
+          bg: "#FEF2F2", // แดง Rose อ่อน
+          text: "#B91C1C", // แดงเข้ม
+          border: "#FECACA"
+        },
+        6: {
+          label: "ยกเลิก",
           bg: "#F1F5F9", // เทา Slate
           text: "#475569", // เทาเข้ม
-          border: "#E2E8F0" 
+          border: "#E2E8F0"
         }
       };
-      
+
       return map[this.value] || { label: "ไม่ระบุ", bg: "#F3F4F6", text: "#9CA3AF", border: "transparent" };
     }
   }
@@ -85,6 +79,7 @@ export default {
 .status-chip {
   transition: all 0.2s ease-in-out;
 }
+
 .status-chip:hover {
   filter: brightness(0.95);
   transform: translateY(-1px);
