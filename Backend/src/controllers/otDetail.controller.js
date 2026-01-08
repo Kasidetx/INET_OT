@@ -28,27 +28,8 @@ export const createDetailsForOt = catchAsync(async (req, res) => {
     throw { statusCode: 400, message: "details ต้องเป็น array" };
   }
 
-  const header = await OtModel.findById(id);
-  if (!header) {
-    throw { statusCode: 404, message: "ไม่พบข้อมูล OT ที่ระบุ" };
-  }
+  // ✅ เรียก Service แทน Code เดิมยาวๆ
+  const result = await OtService.addOtDetails(id, details);
 
-  await OtDetailModel.createMany(id, details);
-
-  // Recalculate Total logic...
-  const allDetails = await OtDetailModel.findByOtId(id);
-  const totalHour = allDetails.reduce((sum, d) => sum + (d.ot_hour || 0), 0);
-
-  await OtModel.update(id, { ...header, total: totalHour });
-
-  sendResponse(
-    res,
-    201,
-    {
-      ot_id: id,
-      total_hour: totalHour,
-      details: allDetails,
-    },
-    "สร้างรายละเอียด OT สำเร็จ"
-  );
+  sendResponse(res, 201, result, "สร้างรายละเอียด OT สำเร็จ");
 });

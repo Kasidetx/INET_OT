@@ -6,11 +6,10 @@ const OtDetailModel = {
     return rows;
   },
 
-  async findByOtId(otId) {
-    const [rows] = await db.query(
-      "SELECT * FROM ot_detail WHERE ot_id = ? ORDER BY id ASC",
-      [otId]
-    );
+  async findByOtId(otId, conn = null) {
+    const sql = "SELECT * FROM ot_detail WHERE ot_id = ? ORDER BY id ASC";
+    const executor = conn || db; // ใช้ conn ถ้ามี
+    const [rows] = await executor.query(sql, [otId]);
     return rows;
   },
 
@@ -27,7 +26,7 @@ const OtDetailModel = {
       detail.ot_hour,
       detail.ot_rate,
     ];
-    
+
     // ✅ ใช้ conn ถ้ามีส่งมา (Executor)
     const executor = conn || db;
     const [result] = await executor.query(sql, values);
