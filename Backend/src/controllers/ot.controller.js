@@ -1,19 +1,7 @@
-import dayjs from "dayjs";
-import OtModel from "../models/ot.model.js";
-import OtDetailModel from "../models/otDetail.model.js";
-import OtConfigModel from "../models/otConfig.model.js";
-import HolidayModel from "../models/holiday.model.js";
 import OtService from "../services/ot.service.js";
-import { catchAsync } from "../utils/catchAsync.js"; // Import ตัวที่สร้างใหม่
-import { sendResponse } from "../utils/response.js"; //
-
-// --- Helper Functions (Private) ---
-const calculateHours = (start, end) => {
-  const s = dayjs(start);
-  const e = dayjs(end);
-  const diffMinutes = e.diff(s, "minute");
-  return diffMinutes > 0 ? parseFloat((diffMinutes / 60).toFixed(2)) : 0;
-};
+import OtModel from "../models/ot.model.js"; // ใช้เฉพาะตอน GET/Query
+import { catchAsync } from "../utils/catchAsync.js";
+import { sendResponse } from "../utils/response.js";
 
 // --- Controllers ---
 
@@ -40,7 +28,7 @@ export const getOtById = catchAsync(async (req, res) => {
 export const createOt = catchAsync(async (req, res) => {
   const body = req.body;
 
-  // Validation เบื้องต้น
+  // 1. Validation เบื้องต้น
   if (!body.start_time || !body.end_time || !body.emp_id) {
     throw {
       statusCode: 400,
@@ -48,17 +36,10 @@ export const createOt = catchAsync(async (req, res) => {
     };
   }
 
-  // เตรียม Doc No
-  const lastDoc = await OtModel.getLastRequestDocNo();
-  const docNo = OtModel.generateNextDocNo(lastDoc);
-
-  // ✅ เรียกใช้ Service แทน Logic เดิม
-  // ส่ง leader_emp_id ไปด้วย (Frontend ต้องส่งมา หรือไป Query หาจาก emp_id)
+  // 2. เรียก Service เลย (ไม่ต้องหา DocNo ที่นี่แล้ว ให้ Service ทำ)
   const result = await OtService.createOt({
     ...body,
-    doc_no: docNo,
-    // ถ้า Frontend ไม่ส่ง sts มา ให้ default เป็น 1 (Submit)
-    sts: body.sts ?? 1,
+    sts: body.sts ?? 1, // Default Submit ถ้าไม่ส่งมา
   });
 
   sendResponse(res, 201, result, "บันทึก OT และสร้างรายการอนุมัติสำเร็จ");
@@ -73,24 +54,16 @@ export const updateOt = catchAsync(async (req, res) => {
 
   sendResponse(res, 200, result, "อัปเดตข้อมูลสำเร็จ");
 });
-
 export const submitOtRequest = catchAsync(async (req, res) => {
-  // 1. รับค่าจาก Frontend
+  // Controller นี้ดูดีแล้ว รับค่า -> เรียก Service -> ตอบกลับ
   const { items, leader_emp_id } = req.body;
 
-  // 2. Validate
-  if (!items || items.length === 0) {
-    throw { statusCode: 400, message: "กรุณาเลือกรายการที่ต้องการส่งคำขอ" };
-  }
-  if (!leader_emp_id) {
-    throw { statusCode: 400, message: "กรุณาระบุรหัสหัวหน้างาน (leader_emp_id)" };
-  }
+  if (!items || items.length === 0)
+    throw { statusCode: 400, message: "กรุณาเลือกรายการ" };
+  if (!leader_emp_id) throw { statusCode: 400, message: "กรุณาระบุหัวหน้างาน" };
 
-  // 3. เรียก Service ให้ทำงาน
   const result = await OtService.submitOtRequest(items, leader_emp_id);
-
-  // 4. ส่ง Response กลับ
-  sendResponse(res, 200, result, "ส่งคำขอและสร้างรายการอนุมัติสำเร็จ");
+  sendResponse(res, 200, result, "ส่งคำขอสำเร็จ");
 });
 
 export const deleteOt = catchAsync(async (req, res) => {
