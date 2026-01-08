@@ -339,17 +339,21 @@ export default {
     async submit() {
       const payload = {
         id: this.id,
-        // ✅ แก้จุดที่ 4: ส่ง request_id กลับไปด้วย (เพื่อให้ Backend รู้ว่าเป็นกลุ่มเดิม)
         request_id: this.request_id,
 
-        start_time: this.checkInDate && this.checkInTime ? `${this.checkInDate} ${this.checkInTime}:00` : null,
-        end_time: this.checkOutDate && this.checkOutTime ? `${this.checkOutDate} ${this.checkOutTime}:00` : null,
+        start_time: this.checkInDate && this.checkInTime ?
+          `${this.checkInDate} ${this.checkInTime}:00` : null,
+        end_time: this.checkOutDate && this.checkOutTime ?
+          `${this.checkOutDate} ${this.checkOutTime}:00` : null,
         description: this.description || "",
         emp_id: this.emp_id,
         created_by: this.emp_id,
         type: this.selectedType,
 
-        sts: 1,  // ✅ กำหนดสถานะเป็น "รอหัวหน้าอนุมัติ" เสมอ
+        // ✅ 1. เพิ่ม leader_emp_id (Mock ไว้ก่อน เพราะระบบจริงต้องดึงจาก Profile พนักงาน)
+        leader_emp_id: "head001",
+
+        sts: 1,
       };
 
       if (!payload.start_time || !payload.end_time) return;
@@ -365,10 +369,11 @@ export default {
           }
           resp = await api.put(`/api/ot/${payload.id}`, payload);
         } else {
+          // ✅ ตรวจสอบ URL ให้แน่ใจว่ายิงถูก (API ปกติไม่มี /api ซ้ำซ้อนถ้า baseURL มีแล้ว)
+          // แต่ถ้า backend route เป็น /api/ot ก็ใช้ตามเดิม
           resp = await api.post(`/api/ot`, payload);
         }
 
-        // ให้ parent ไป refresh list เองได้
         const result = {
           mode: this.mode,
           payload,
@@ -378,6 +383,8 @@ export default {
         this.close();
       } catch (err) {
         console.error("Error saving OT:", err);
+        // ✅ 2. เพิ่ม Alert ให้รู้ว่า Error อะไร (ช่วย debug ได้ดีกว่าเงียบไปเลย)
+        alert("บันทึกไม่สำเร็จ: " + (err.response?.data?.message || err.message));
       } finally {
         this.saving = false;
       }

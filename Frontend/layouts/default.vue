@@ -124,7 +124,7 @@ export default {
         {
           icon: "mdi-cog-outline",
           title: "ตั้งค่าระบบ OT", // ปรับชื่อเพื่อไม่ให้ซ้ำกับข้างบน
-          to: "/overtime",
+          to: "/overtimeconfig",
           roles: ["HR"],
         },
         {

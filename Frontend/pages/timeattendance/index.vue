@@ -317,25 +317,26 @@ export default {
     async submitRequest() {
       // กรองเอาเฉพาะรายการที่เลือก
       const selectedItems = this.timeEntries.filter((e) => e.selected);
-
       if (selectedItems.length === 0) {
         alert("กรุณาเลือกรายการที่ต้องการส่งคำขอ");
         return;
       }
 
       try {
-        // ยิง API ไปที่ Backend เพื่อคำนวณและเปลี่ยนสถานะ
+        // ยิง API ไปที่ Backend
         const res = await api.post("/api/ot/submit", {
           items: selectedItems.map(item => ({
             id: item.id, // ot_id
-          }))
+          })),
+          // ✅ เพิ่มบรรทัดนี้: ส่งรหัสหัวหน้างานจาก Frontend
+          // คุณอาจจะดึงจากตัวแปร, vuex store หรือ mock ไปก่อนก็ได้
+          leader_emp_id: "head001"
         });
+
         console.log("Submit Response:", res);
 
         if (res.data && res.data.status === 'success') {
-          // ปิด Dialog ยืนยัน
           this.dialogConfirm = false;
-          // รีโหลดข้อมูลใหม่
           await this.fetchTimeEntries();
         }
       } catch (err) {
