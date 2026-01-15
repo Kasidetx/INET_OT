@@ -8,7 +8,7 @@ import db from '../config/db.js';
 const OtConfigModel = {
 async findAll() {
        // ดึงทุก column ตามภาพ Schema ใหม่
-       const sql = 'SELECT * FROM ot_config WHERE is_active = 1';
+     const sql = 'SELECT * FROM ot_config ORDER BY id ASC'
        const [rows] = await db.query(sql);
        return rows;
     },
@@ -19,19 +19,26 @@ async findAll() {
         return rows[0] || null;
     },
 
-    async create(data) {
+   async create(data) {
         const sql = `
-      INSERT INTO ot_config (description, type_work_id, start_time, end_time, rate, hour, deduction_min, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+            INSERT INTO ot_config (
+                employee_type_id, day_type, ot_period,  rate, 
+                start_condition, start_time, min_continuous_hours, 
+                require_break, break_minutes, description, is_active
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
         const values = [
-            data.description,
-            data.type_work_id,
+            data.employee_type_id,
+            data.day_type,
+            data.ot_period,
+            data.rate || 1.0,
+            data.start_condition,
             data.start_time,
-            data.end_time,
-            data.rate || 1.00,
-            data.hour || null,
-            data.deduction_min || 0,
+            data.min_continuous_hours || 0.00,
+            data.require_break || 0,
+            data.break_minutes || 0,
+            data.description,
             data.is_active !== undefined ? data.is_active : 1
         ];
 
@@ -41,19 +48,17 @@ async findAll() {
 
     async update(id, data) {
         const sql = `
-      UPDATE ot_config
-      SET description = ?, type_work_id = ?, start_time = ?, end_time = ?, rate = ?, hour = ?, deduction_min = ?, is_active = ?
-      WHERE id = ?
-    `;
+            UPDATE ot_config
+            SET 
+                employee_type_id = ?, day_type = ?, ot_period = ?, rate = ?,  
+                start_condition = ?, start_time = ?, min_continuous_hours = ?, 
+                require_break = ?, break_minutes = ?, description = ?, is_active = ?
+            WHERE id = ?
+        `;
         const values = [
-            data.description,
-            data.type_work_id,
-            data.start_time,
-            data.end_time,
-            data.rate || 1.00,
-            data.hour || null,
-            data.deduction_min || 0,
-            data.is_active !== undefined ? data.is_active : 1,
+            data.employee_type_id, data.day_type, data.ot_period, data.rate,
+            data.start_condition, data.start_time, data.min_continuous_hours,
+            data.require_break, data.break_minutes, data.description, data.is_active,
             id
         ];
 

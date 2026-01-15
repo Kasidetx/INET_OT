@@ -1,6 +1,6 @@
 import OtConfigModel from "../models/otConfig.model.js";
 import { sendResponse } from "../utils/response.js";
-import { catchAsync } from "../utils/catchAsync.js"; // ✅ Import เพิ่ม
+import { catchAsync } from "../utils/catchAsync.js";
 
 export const getAllOtConfigs = catchAsync(async (req, res) => {
   const otConfigs = await OtConfigModel.findAll();
@@ -18,70 +18,109 @@ export const getOtConfigById = catchAsync(async (req, res) => {
   sendResponse(res, 200, otConfig, "ค้นหาการตั้งค่า OT สำเร็จ");
 });
 
+
+// ================= CREATE =================
+
 export const createOtConfig = catchAsync(async (req, res) => {
   const {
-    description,
-    type_work_id,
-    start_time,
-    end_time,
+    employee_type_id,
+    day_type,
+    ot_period,
     rate,
-    hour,
-    deduction_min,
-    is_active,
+    start_time,
+    description,
+    break_minutes,
+    start_condition,
+    min_continuous_hours
   } = req.body;
 
-  if (!description || !type_work_id || !start_time || !end_time) {
+  if (!employee_type_id || !day_type || !ot_period) {
     throw {
       statusCode: 400,
-      message:
-        "ข้อมูลไม่ครบถ้วน (description, type_work_id, start_time, end_time)",
+      message: 'กรุณาส่งข้อมูลให้ครบถ้วน'
     };
   }
 
+  const isNeedStartTime =
+    employee_type_id === 1 &&
+    ot_period === 'DURING_WORK';
+
   const newOtConfig = await OtConfigModel.create({
+    employee_type_id,
+    day_type,
+    ot_period,
+
+    // ✅ รับตรงจาก frontend
+    start_condition: start_condition,
+
+    rate: rate || 1.0,
+
+    start_time: isNeedStartTime ? start_time : null,
+
     description,
-    type_work_id,
-    start_time,
-    end_time,
-    rate,
-    hour,
-    deduction_min,
-    is_active,
+
+    break_minutes: break_minutes || 0,
+
+    min_continuous_hours:
+      min_continuous_hours ||
+      (day_type === 'WORKDAY' ? 2.0 : 4.0),
+
+    require_break: break_minutes > 0 ? 1 : 0,
+
+    is_active: 1
   });
 
-  sendResponse(res, 201, newOtConfig, "สร้าง OT Config สำเร็จ");
+  sendResponse(res, 201, newOtConfig, "สร้างการตั้งค่า OT สำเร็จ");
 });
+
+
+
+// ================= UPDATE =================
 
 export const updateOtConfig = catchAsync(async (req, res) => {
   const { id } = req.params;
+
   const {
-    description,
-    type_work_id,
-    start_time,
-    end_time,
+    employee_type_id,
+    day_type,
+    ot_period,
     rate,
-    hour,
-    deduction_min,
-    is_active,
+    start_time,
+    description,
+    break_minutes,
+    start_condition,
+    min_continuous_hours,
+    is_active
   } = req.body;
 
   const updated = await OtConfigModel.update(id, {
-    description,
-    type_work_id,
-    start_time,
-    end_time,
-    rate,
-    hour,
-    deduction_min,
-    is_active,
-  });
 
-  if (!updated) {
-    throw { statusCode: 404, message: "ไม่พบข้อมูล OT Config ที่ระบุ" };
-  }
+    employee_type_id,
+    day_type,
+    ot_period,
+
+    // ✅ สำคัญสุด
+    start_condition: start_condition,
+
+    rate,
+    start_time,
+    description,
+
+    break_minutes,
+
+    min_continuous_hours,
+
+    require_break: break_minutes > 0 ? 1 : 0,
+
+    is_active:
+      is_active !== undefined ? is_active : 1
+  });
 
   sendResponse(res, 200, null, "อัปเดต OT Config สำเร็จ");
 });
+
+
+// ================= DELETE =================
 
 export const deleteOtConfig = catchAsync(async (req, res) => {
   const { id } = req.params;
