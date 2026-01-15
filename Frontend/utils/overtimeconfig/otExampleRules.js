@@ -1,110 +1,61 @@
-// otExampleRules.js
+import { getEmployeeTypeId } from './otEmployeeHelper'
+
 export function getExampleRules(form) {
-  const type = (form.employeeTypeName || '').toLowerCase()
-  const dayType = form.Worknametype || ''
+  const empType = getEmployeeTypeId(form.employeeTypeName)
   const period = form.otPeriod || ''
+  const hours = Number(form.min_continuousHours || 0)
 
-  const isHoliday = dayType.includes('หยุด')
-  const isWorkday = dayType.includes('ทำงาน')
-  const isDuring = period.includes('ในเวลา')
-  const isOutside = period.includes('นอกเวลา')
+  const lines = []
 
+ 
+  lines.push(`${form.employeeTypeName || 'พนักงาน'} ${form.Worknametype || ''} (${period})`)
 
-  // ---------- พนักงานปกติ ----------
-  if (type.includes('ปกติ')) {
-    if (isWorkday && isDuring) {
-      return [
-        'พนักงานปกติ วันทำงาน (ในเวลา)',
-        '(เงื่อนไข): -'
-      ]
-    }
-
-    if (isWorkday && isOutside) {
-      return [
-        'พนักงานปกติ วันทำงาน (นอกเวลา)',
-        ' (เงื่อนไข) หลังเลิกงาน: ทำงานเกิน 2 ชม. หักพัก 30 นาที, ก่อนเริ่มงาน: ไม่มีหักพัก'
-      ]
-    }
-
-    if (isHoliday && isDuring) {
-      return [
-        'พนักงานปกติ วันหยุด (ในเวลา) ',
-        `(เงื่อนไข) ทำงานต่อเนื่อง 5.30 ชม. หักพัก 30 นาที
-         ทำงานต่อเนื่อง 6 ชม. หักพัก 1 ชม.`
-      ]
-    }
-
-    if (isHoliday && isOutside) {
-      return [
-        'พนักงานปกติ วันหยุด (นอกเวลา): ทำงานครบ 9 ชม. หักพัก 1 ชม.',
-        'หลังเลิกงาน: ทำงานเกิน 2 ชม. หักพัก 30 นาที'
-      ]
-    }
+        /*  นอกเวลา */
+  if (period === 'ทำงานนอกเวลา') {
+    lines.push('เงื่อนไข: ทำงานเกิน 2 ชม. หักพัก 30 นาที')
+    lines.push(
+      hours >= 2
+        ? `→ ทำงาน ${hours} ชม. หักพัก 30 นาที`
+        : `→ ทำงาน ${hours} ชม. ยังไม่เข้าเงื่อนไขพัก`
+    )
+    return lines
   }
 
-  
-  // ---------- เข้ากะปกติ ----------
-  if (type.includes('เข้ากะปกติ')) {
-    if (isWorkday && isDuring) {
-      return [
-        'พนักงานเข้ากะปกติ วันทำงาน (ในเวลา): ทำงานครบ 9 ชม. หักพัก 1 ชม.',
-        '-'
-      ]
-    }
-
-    if (isWorkday && isOutside) {
-      return [
-        'พนักงานเข้ากะปกติ วันทำงาน (นอกเวลา)',
-        'ทำงานเกิน 2 ชม. หักพัก 30 นาที'
-      ]
-    }
-
-    if (isHoliday && isDuring) {
-      return [
-        'พนักงานเข้ากะปกติ วันหยุด (ในเวลา)',
-        'ทำงานต่อเนื่อง 5.30 ชม. หักพัก 30 นาที / 6 ชม. หักพัก 1 ชม.'
-      ]
-    }
-
-    if (isHoliday && isOutside) {
-      return [
-        'พนักงานเข้ากะปกติ วันหยุด (นอกเวลา)',
-        'ไม่มีหักพัก'
-      ]
-    }
+          /* ในเวลา*/
+  if (empType === 1) {
+    lines.push('เงื่อนไข: ทำงานครบ 9 ชม. หักพัก 1 ชม.')
+    lines.push(
+      hours >= 9
+        ? `→ ทำงาน ${hours} ชม. หักพัก 1 ชม.`
+        : `→ ทำงาน ${hours} ชม. ยังไม่เข้าเงื่อนไขพัก`
+    )
   }
 
-  // ---------- เข้ากะ 12 ชม ----------
-  if (type.includes('12')) {
-    if (isWorkday && isDuring) {
-      return [
-        'พนักงานเข้ากะ 12 ชม. วันทำงาน',
-        'ทำงานครบ 12 ชม. หักพัก 1 ชม. 30 นาที'
-      ]
-    }
+  if (empType === 2 || empType === 4) {
+    lines.push('เงื่อนไข:')
+    lines.push('- 5.30 ชม. พัก 30 นาที')
+    lines.push('- 6.00 ชม. พัก 1 ชม.')
 
-    if (isWorkday && isOutside) {
-      return [
-        'พนักงานเข้ากะ 12 ชม. วันทำงาน (นอกเวลา)',
-        'ทำงานเกิน 2 ชม. หักพัก 30 นาที'
-      ]
-    }
-
-    if (isHoliday) {
-      return [
-        'พนักงานเข้ากะ 12 ชม. วันหยุด',
-        'ไม่มีหักพัก'
-      ]
-    }
+    if (hours >= 6)
+      lines.push(`→ ทำงาน ${hours} ชม. หักพัก 1 ชม.`)
+    else if (hours >= 5.5)
+      lines.push(`→ ทำงาน ${hours} ชม. หักพัก 30 นาที`)
+    else
+      lines.push(`→ ทำงาน ${hours} ชม. ยังไม่เข้าเงื่อนไขพัก`)
   }
 
-  // ---------- รายชั่วโมง ----------
-  if (type.includes('ชั่วโมง')) {
-    return [
-      'พนักงานรายชั่วโมง',
-      'คิดตามเวลาทำงานจริง'
-    ]
+  if (empType === 3) {
+    lines.push('เงื่อนไข:')
+    lines.push('- 11.30 ชม. พัก 1 ชม. 30 นาที')
+    lines.push('- 12.00 ชม. พัก 1 ชม. 30 นาที')
+
+    if (hours >= 11.5)
+      lines.push(`→ ทำงาน ${hours} ชม. หักพัก 1 ชม. 30 นาที`)
+    else if (hours >= 6)
+      lines.push(`→ ทำงาน ${hours} ชม. หักพัก 1 ชม.`)
+    else
+      lines.push(`→ ทำงาน ${hours} ชม. ยังไม่เข้าเงื่อนไขพัก`)
   }
 
-  return []
+  return lines
 }

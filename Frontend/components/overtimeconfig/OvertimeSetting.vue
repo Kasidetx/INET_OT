@@ -156,43 +156,40 @@ export default {
       const periods = {
         'DURING_WORK': 'ในเวลางาน',
         'OUTSIDE_WORK': 'นอกเวลางาน',
-        'BEFORE_WORK': 'ก่อนเริ่มงาน',
-        'AFTER_WORK': 'หลังเลิกงาน'
       }
       return periods[period] || period
     },
 
 
-    getDisplayTime(item) {
+   getDisplayTime(item) {
 
-      // 1. พนักงานกะ + ทำงานในเวลา → ไม่ต้องแสดงอะไร
-      if (
-        item.employee_type_id !== 1 &&
-        item.ot_period === "DURING_WORK"
-      ) {
-        return "-"
-      }
+  // ===== 1. พนักงานปกติ =====
+  if (item.employee_type_id === 1) {
+    if (item.start_time) {
+      return item.start_time.substring(0, 5) + " น."
+    }
 
-      // 2. พนักงานปกติ + ทำงานในเวลา โชว์เวลา FIXED_TIME เท่านั้น
-      if (
-        item.employee_type_id === 1 &&
-        item.ot_period === "DURING_WORK"
-      ) {
-        return item.start_time
-          ? item.start_time.substring(0, 5) + " น."
-          : "-"
-      }
+    // กันกรณีไม่มีเวลา
+    return item.ot_period === "DURING_WORK"
+      ? "เริ่ม 08:30"
+      : "เริ่ม 17:30"
+  }
 
-      // 3. กรณีอื่น ๆ ใช้ start_condition map
-      const map = {
-        AFTER_SHIFT: "หลังจบกะ",
-        AFTER_WORK: "หลังเลิกงาน",
-        BEFORE_WORK: "ก่อนเริ่มงาน",
-        FIXED_TIME: "-"
-      }
+  // ===== 2. พนักงานกะ =====
+  if (item.employee_type_id === 2 || item.employee_type_id === 3) {
+    return item.ot_period === "DURING_WORK"
+      ? "ตามตารางกะ"
+      : "ตามตารางกะ"
+  }
 
-      return map[item.start_condition] || "-"
-    },
+  // ===== 3. รายชั่วโมง =====
+  if (item.employee_type_id === 4) {
+    return "ไม่มีเวลาเข้างาน"
+  }
+
+  return "-"
+},
+
 
 
     // =====================================
