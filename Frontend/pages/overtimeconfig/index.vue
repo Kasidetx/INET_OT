@@ -1,48 +1,173 @@
 <template>
-  <v-container fluid class="ot-page px-10 py-6">
+  <v-container fluid class="ot-page px-10 py-6 grey lighten-5">
     <v-row justify="center">
-      <v-col cols="12" md="11" lg="10">
-        <template>
-          <div class="page-title">
-            ประเภทการจ่ายค่าล่วงเวลา
-          </div>
-        </template>
+      <v-col cols="12" md="11" lg="11">
 
+        <div class="mb-6">
+          <h2 class="text-h5 font-weight-bold grey--text text--darken-3">ตั้งค่า OT Config</h2>
+        </div>
 
-        <!-- การ์ดหลักแบบ iRecruit -->
-        <OvertimeTypeForm @saved="handleSaved" />
+        <StatsGrid :stats="otStats" :active-id="selectedTypeId" class="mb-6" @click-stat="handleStatClick" />
+
+        <div class="d-flex align-center flex-wrap gap-4 mb-4">
+          <v-text-field v-model="search" prepend-inner-icon="mdi-magnify" placeholder="ค้นหาชื่อการตั้งค่า..." outlined
+            dense hide-details class="white rounded-lg" style="max-width: 300px;"></v-text-field>
+
+          <v-btn color="blue lighten-5" elevation="0" class="blue--text rounded-lg ml-2 text-none" height="40">
+            <v-icon left size="18">mdi-filter-variant</v-icon> ตัวกรอง
+          </v-btn>
+
+          <v-spacer></v-spacer>
+
+          <v-btn class="btn-add-pill px-6 text-none" depressed @click="openAddDialog">
+            <v-icon left color="white">mdi-plus-circle</v-icon>
+            เพิ่มประเภทการจ้าง
+          </v-btn>
+
+          <v-btn color="success" outlined class="rounded-lg font-weight-bold text-none" height="40">
+            <v-icon left>mdi-file-excel</v-icon> ดาวน์โหลดไฟล์
+          </v-btn>
+        </div>
+
+        <v-card outlined class="rounded-xl border-light overflow-hidden">
+          <v-card-title class="pb-4 blue--text subtitle-1 font-weight-bold px-4">
+            รายการเอกสาร {{ filteredConfigs.length }} รายการ
+            <v-chip v-if="selectedTypeId && selectedTypeId !== 'all'" close @click:close="selectedTypeId = 'all'"
+              class="ml-2" small>
+              กรองโดย: {{ getStatLabel(selectedTypeId) }}
+            </v-chip>
+          </v-card-title>
+
+          <OvertimeSetting :items="filteredConfigs" :loading="loading" @edit="handleEdit" @refresh="fetchData" />
+        </v-card>
       </v-col>
     </v-row>
+
+    <v-dialog v-model="dialogVisible" max-width="650px" persistent>
+      <OvertimeTypeForm ref="otForm" :edit-data="selectedItem" @close="dialogVisible = false" @saved="onFormSaved" />
+    </v-dialog>
   </v-container>
 </template>
 
 <script>
-import OvertimeTypeForm from '~/components/overtime/overtimetypeform.vue'
+import OvertimeTypeForm from '~/components/overtime/OvertimeTypeForm.vue'
+import StatsGrid from '~/components/global/StatusOTconfig.vue'
+import api from "~/service/api"
 
 export default {
-  components: {
-    OvertimeTypeForm
+  name: 'OvertimeTypePage',
+  components: { OvertimeTypeForm,  StatsGrid },
+  data() {
+    return {
+      search: '',
+      loading: false,
+      dialogVisible: false,
+      selectedItem: null,
+      selectedTypeId: 'all',
+      otConfigs: [],
+      otStats: [
+        { label: 'ทั้งหมด', value: 0, icon: 'mdi-file-document', color: '#1976D2', id: 'all' },
+        { label: 'พนักงานปกติ', value: 0, icon: 'mdi-account', color: '#FFA000', id: 1 },
+        { label: 'กะปกติ', value: 0, icon: 'mdi-clock-outline', color: '#6366f1', id: 2 },
+        { label: 'กะ 12ชม', value: 0, icon: 'mdi-hours-12', color: '#4CAF50', id: 3 },
+        { label: 'รายชั่วโมง', value: 0, icon: 'mdi-account-clock', color: '#EF5350', id: 4 },
+        { label: 'ไม่ใช้งาน', value: 0, icon: 'mdi-account-off', color: '#78909C', id: 'inactive' },
+      ],
+    }
   },
+  computed: {
+    filteredConfigs() {
+      let data = this.otConfigs;
+      if (this.selectedTypeId === 'inactive') {
+        data = data.filter(i => !i.is_active);
+      } else if (this.selectedTypeId && this.selectedTypeId !== 'all') {
+        data = data.filter(i => i.employee_type_id === this.selectedTypeId);
+      }
+      if (this.search) {
+        const s = this.search.toLowerCase();
+        data = data.filter(i => i.description?.toLowerCase().includes(s));
+      }
+      return data;
+    } 
+  },
+  mounted() { this.fetchData(); },
   methods: {
-    handleSaved(payload) {
-      // ไว้ต่อกับ API / Dialog ทีหลัง
-      // eslint-disable-next-line no-console
-      console.log('saved overtime type', payload)
+    async fetchData() {
+      this.loading = true;
+      try {
+        const response = await api.get('/api/otconfig');
+        this.otConfigs = response.result || response.data?.result || [];
+        this.updateStats();
+      } finally { this.loading = false; }
+    },
+    handleStatClick(stat) { this.selectedTypeId = stat.id; },
+    openAddDialog() {
+      this.selectedItem = null;
+      this.dialogVisible = true;
+    },
+    handleEdit(item) {
+      this.selectedItem = item;
+      this.dialogVisible = true;
+    },
+    onFormSaved() {
+      this.dialogVisible = false;
+      this.fetchData();
+    },
+    updateStats() {
+      this.otStats[0].value = this.otConfigs.length;
+      this.otStats.slice(1, 5).forEach(stat => {
+        stat.value = this.otConfigs.filter(i => i.employee_type_id === stat.id).length;
+      });
+      this.otStats[5].value = this.otConfigs.filter(i => !i.is_active).length;
+    },
+    getStatLabel(id) {
+      return this.otStats.find(s => s.id === id)?.label || '';
     }
   }
 }
 </script>
 
 <style scoped>
-.ot-page {
-  max-width: auto;
+.border-light {
+  border: 1px solid #eef2f6 !important;
 }
 
-.page-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 8px;
-  margin-right: 1000px;
+.custom-table ::v-deep table {
+  background-color: transparent !important;
+}
+
+.custom-table ::v-deep thead th {
+  background-color: #f1f5f9 !important;
+  font-size: 13px !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+  border-bottom: none !important;
+}
+
+.custom-table ::v-deep tbody td {
+  font-size: 14px !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.btn-add-pill {
+  background-color: #2563eb !important;
+  /* สีน้ำเงินสดตามรูป */
+  color: white !important;
+  border-radius: 999px !important;
+  /* ทำให้ขอบมนแบบ Pill */
+  height: 42px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
+  /* เพิ่มเงาสีน้ำเงินจางๆ */
+  transition: all 0.2s ease;
+}
+
+.btn-add-pill:hover {
+  background-color: #1d4ed8 !important;
+  /* สีเข้มขึ้นเมื่อ Hover */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3) !important;
 }
 </style>
