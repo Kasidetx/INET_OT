@@ -23,6 +23,7 @@ export const getOtConfigById = catchAsync(async (req, res) => {
 
 export const createOtConfig = catchAsync(async (req, res) => {
   const {
+    name,
     employee_type_id,
     day_type,
     ot_period,
@@ -34,7 +35,7 @@ export const createOtConfig = catchAsync(async (req, res) => {
     min_continuous_hours
   } = req.body;
 
-  if (!employee_type_id || !day_type || !ot_period) {
+  if (!name || !employee_type_id || !day_type || !ot_period) {
     throw {
       statusCode: 400,
       message: 'กรุณาส่งข้อมูลให้ครบถ้วน'
@@ -46,6 +47,7 @@ export const createOtConfig = catchAsync(async (req, res) => {
     ot_period === 'DURING_WORK';
 
   const newOtConfig = await OtConfigModel.create({
+    name,
     employee_type_id,
     day_type,
     ot_period,
@@ -81,6 +83,7 @@ export const updateOtConfig = catchAsync(async (req, res) => {
   const { id } = req.params;
 
   const {
+    name,
     employee_type_id,
     day_type,
     ot_period,
@@ -94,29 +97,21 @@ export const updateOtConfig = catchAsync(async (req, res) => {
   } = req.body;
 
   const updated = await OtConfigModel.update(id, {
-
+    name,
     employee_type_id,
     day_type,
     ot_period,
-
-    // ✅ สำคัญสุด
-    start_condition: start_condition,
-
+    start_condition,
     rate,
     start_time,
     description,
-
     break_minutes,
-
     min_continuous_hours,
-
     require_break: break_minutes > 0 ? 1 : 0,
-
-    is_active:
-      is_active !== undefined ? is_active : 1
+    is_active: is_active !== undefined ? is_active : 1
   });
 
-  sendResponse(res, 200, null, "อัปเดต OT Config สำเร็จ");
+  sendResponse(updated, 200, null, "อัปเดต OT Config สำเร็จ");
 });
 
 
