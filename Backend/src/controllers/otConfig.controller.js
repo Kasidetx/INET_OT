@@ -96,7 +96,7 @@ export const updateOtConfig = catchAsync(async (req, res) => {
     is_active
   } = req.body;
 
-  const updated = await OtConfigModel.update(id, {
+  await OtConfigModel.update(id, {
     name,
     employee_type_id,
     day_type,
@@ -111,7 +111,7 @@ export const updateOtConfig = catchAsync(async (req, res) => {
     is_active: is_active !== undefined ? is_active : 1
   });
 
-  sendResponse(updated, 200, null, "อัปเดต OT Config สำเร็จ");
+  sendResponse(res, 200, null, "อัปเดต OT Config สำเร็จ");
 });
 
 
