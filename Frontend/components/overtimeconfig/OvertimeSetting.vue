@@ -59,7 +59,7 @@
             </td>
 
             <td class="text-center">
-              <StatusOTconfig :value="item.is_active" />
+              <StatsGrid :value="item.is_active" />
             </td>
 
             <td class="text-center">
@@ -111,10 +111,12 @@
 
 <script>
 import api from "~/service/api"
-
+import StatsGrid from '~/components/overtimeconfig/StatsGrid.vue'
 export default {
   name: "OvertimeSettingTable",
-
+  components: {
+    StatsGrid
+  },
   props: {
     items: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false }

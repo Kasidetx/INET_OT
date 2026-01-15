@@ -30,7 +30,7 @@
 
 <script>
 export default {
-  name: "StatusOTconfig",
+  name: "StatsGrid",
   props: {
     value: { type: [Number, String], default: null },
     stats: { type: Array, default: null },
