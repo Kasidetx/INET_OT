@@ -1,4 +1,4 @@
-import db from '../config/db.js';
+import db from "../config/db.js";
 
 // 1. พนักงานทำงานเวลาปกติ
 // 2. พนักงานเข้ากะทำงานปกติ
@@ -6,71 +6,81 @@ import db from '../config/db.js';
 // 4. พนักงานทำงานตามชั่วโมง
 
 const OtConfigModel = {
-async findAll() {
-       // ดึงทุก column ตามภาพ Schema ใหม่
-     const sql = 'SELECT * FROM ot_config ORDER BY id ASC'
-       const [rows] = await db.query(sql);
-       return rows;
-    },
+  async findAll() {
+    // ดึงทุก column ตามภาพ Schema ใหม่
+    const sql = "SELECT * FROM ot_config ORDER BY id ASC";
+    const [rows] = await db.query(sql);
+    return rows;
+  },
 
+  async findById(id) {
+    const [rows] = await db.query("SELECT * FROM ot_config WHERE id = ?", [id]);
+    return rows[0] || null;
+  },
 
-    async findById(id) {
-        const [rows] = await db.query('SELECT * FROM ot_config WHERE id = ?', [id]);
-        return rows[0] || null;
-    },
+  async create(data) {
+    const sql = `
+        INSERT INTO ot_config (
+            name, employee_type_id, day_type, ot_period, rate, 
+            start_condition, start_time,
+            min_continuous_hours, require_break, break_minutes, 
+            description, is_active
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    const values = [
+      data.name,
+      data.employee_type_id,
+      data.day_type,
+      data.ot_period,
+      data.rate || 1.0,
+      data.start_condition,
+      data.start_time,
+      data.min_continuous_hours || 0.0,
+      data.require_break || 0,
+      data.break_minutes || 0,
+      data.description,
+      data.is_active !== undefined ? data.is_active : 1,
+    ];
 
-   async create(data) {
-        const sql = `
-            INSERT INTO ot_config (
-                name, employee_type_id, day_type, ot_period,  rate, 
-                start_condition, start_time, min_continuous_hours, 
-                require_break, break_minutes, description, is_active
-            )
-            VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const values = [
-            data.name,
-            data.employee_type_id,
-            data.day_type,
-            data.ot_period,
-            data.rate || 1.0,
-            data.start_condition,
-            data.start_time,
-            data.min_continuous_hours || 0.00,
-            data.require_break || 0,
-            data.break_minutes || 0,
-            data.description,
-            data.is_active !== undefined ? data.is_active : 1
-        ];
+    const [result] = await db.query(sql, values);
+    return { id: result.insertId, ...data };
+  },
 
-        const [result] = await db.query(sql, values);
-        return { id: result.insertId, ...data };
-    },
+  async update(id, data) {
+    const sql = `
+        UPDATE ot_config
+        SET 
+            name = ?, employee_type_id = ?, day_type = ?, ot_period = ?, rate = ?,
+            start_condition = ?, start_time = ?,
+            min_continuous_hours = ?, require_break = ?, break_minutes = ?, 
+            description = ?, is_active = ?
+        WHERE id = ?
+    `;
+    const values = [
+      data.name,
+      data.employee_type_id,
+      data.day_type,
+      data.ot_period,
+      data.rate,
+      data.start_condition,
+      data.start_time,
+      data.min_continuous_hours,
+      data.require_break,
+      data.break_minutes,
+      data.description,
+      data.is_active,
+      id,
+    ];
 
-    async update(id, data) {
-        const sql = `
-            UPDATE ot_config
-            SET 
-                name = ?, employee_type_id = ?, day_type = ?, ot_period = ?, rate = ?,  
-                start_condition = ?, start_time = ?, min_continuous_hours = ?, 
-                require_break = ?, break_minutes = ?, description = ?, is_active = ?
-            WHERE id = ?
-        `;
-        const values = [
-            data.name, data.employee_type_id, data.day_type, data.ot_period, data.rate,
-            data.start_condition, data.start_time, data.min_continuous_hours,
-            data.require_break, data.break_minutes, data.description, data.is_active,
-            id
-        ];
+    const [result] = await db.query(sql, values);
+    return result.affectedRows > 0;
+  },
 
-        const [result] = await db.query(sql, values);
-        return result.affectedRows > 0;
-    },
-
-    async remove(id) {
-        const [result] = await db.query('DELETE FROM ot_config WHERE id = ?', [id]);
-        return result.affectedRows > 0;
-    }
+  async remove(id) {
+    const [result] = await db.query("DELETE FROM ot_config WHERE id = ?", [id]);
+    return result.affectedRows > 0;
+  },
 };
 
 export default OtConfigModel;

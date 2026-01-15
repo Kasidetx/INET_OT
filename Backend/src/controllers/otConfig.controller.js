@@ -1,4 +1,5 @@
 import OtConfigModel from "../models/otConfig.model.js";
+import OtService from "../services/ot.service.js";
 import { sendResponse } from "../utils/response.js";
 import { catchAsync } from "../utils/catchAsync.js";
 
@@ -29,9 +30,9 @@ export const createOtConfig = catchAsync(async (req, res) => {
     ot_period,
     rate,
     start_time,
+    start_condition,
     description,
     break_minutes,
-    start_condition,
     min_continuous_hours
   } = req.body;
 
@@ -42,10 +43,6 @@ export const createOtConfig = catchAsync(async (req, res) => {
     };
   }
 
-  const isNeedStartTime =
-    employee_type_id === 1 &&
-    ot_period === 'DURING_WORK';
-
   const newOtConfig = await OtConfigModel.create({
     name,
     employee_type_id,
@@ -53,11 +50,12 @@ export const createOtConfig = catchAsync(async (req, res) => {
     ot_period,
 
     // ✅ รับตรงจาก frontend
+
+    start_time,
+
     start_condition: start_condition,
 
     rate: rate || 1.0,
-
-    start_time: isNeedStartTime ? start_time : null,
 
     description,
 
@@ -75,8 +73,6 @@ export const createOtConfig = catchAsync(async (req, res) => {
   sendResponse(res, 201, newOtConfig, "สร้างการตั้งค่า OT สำเร็จ");
 });
 
-
-
 // ================= UPDATE =================
 
 export const updateOtConfig = catchAsync(async (req, res) => {
@@ -88,21 +84,22 @@ export const updateOtConfig = catchAsync(async (req, res) => {
     day_type,
     ot_period,
     rate,
+    start_condition,
     start_time,
     description,
     break_minutes,
-    start_condition,
     min_continuous_hours,
     is_active
   } = req.body;
 
+  // อัปเดต Config ตามปกติ
   await OtConfigModel.update(id, {
     name,
     employee_type_id,
     day_type,
     ot_period,
-    start_condition,
     rate,
+    start_condition,
     start_time,
     description,
     break_minutes,
@@ -111,7 +108,9 @@ export const updateOtConfig = catchAsync(async (req, res) => {
     is_active: is_active !== undefined ? is_active : 1
   });
 
-  sendResponse(res, 200, null, "อัปเดต OT Config สำเร็จ");
+  await OtService.recalculateAllPending();
+
+  sendResponse(res, 200, null, "อัปเดต OT Config และคำนวณยอดเงินรายการคงค้างใหม่เรียบร้อยแล้ว");
 });
 
 

@@ -59,7 +59,7 @@ const approvalModel = {
       SET
         approval_status = ?,
         reason = ?,
-        action_at = NOW(),
+        action_at = ?,
         action_by = ?
       WHERE id = ?
     `;
@@ -67,6 +67,7 @@ const approvalModel = {
     const [result] = await executor.query(sql, [
       data.approval_status,
       data.reason || null,
+      new Date(),
       data.action_by,
       id,
     ]);
@@ -77,19 +78,21 @@ const approvalModel = {
     const sql = `
       INSERT INTO approval
       (request_id, level, approve_emp, approval_status, reason, action_at, action_by, created_at)
-      VALUES (?, ?, ?, ?, ?, NOW(), ?, NOW())
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     // ✅ เลือกใช้ conn ที่ส่งมา หรือใช้ db ปกติ
     const executor = conn || db;
-
+    const now = new Date();
     const [result] = await executor.query(sql, [
       data.request_id,
       data.level,
       data.approve_emp,
       data.approval_status,
+      now,
       data.reason || null,
       data.action_by,
+      now,
     ]);
     return result.insertId;
   },

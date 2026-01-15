@@ -80,7 +80,7 @@ const OtModel = {
   async createRequest(data, conn = null) {
     const sql = `
       INSERT INTO request (doc_no, title, type, sts, created_by, created_at) 
-      VALUES (?, ?, ?, ?, ?, NOW())
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
     const executor = conn || db;
     const [result] = await executor.query(sql, [
@@ -89,6 +89,7 @@ const OtModel = {
       data.type,
       data.sts,
       data.created_by,
+      new Date()
     ]);
     return result.insertId;
   },
@@ -160,6 +161,18 @@ const OtModel = {
   async remove(id) {
     const [result] = await db.query("DELETE FROM ot WHERE id = ?", [id]);
     return result.affectedRows > 0;
+  },
+
+  async findPendingOtIds() {
+    // เลือกเฉพาะใบที่ยังไม่ Approved(3) และยังไม่ Cancel/Reject
+    const sql = `
+      SELECT ot.id, ot.start_time, ot.end_time 
+      FROM ot 
+      JOIN request r ON ot.request_id = r.id 
+      WHERE r.sts IN (0, 1, 2) 
+    `;
+    const [rows] = await db.query(sql);
+    return rows;
   },
 };
 
