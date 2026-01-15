@@ -23,10 +23,6 @@
             <v-icon left color="white">mdi-plus-circle</v-icon>
             เพิ่มประเภทการจ้าง
           </v-btn>
-
-          <v-btn color="success" outlined class="rounded-lg font-weight-bold text-none" height="40">
-            <v-icon left>mdi-file-excel</v-icon> ดาวน์โหลดไฟล์
-          </v-btn>
         </div>
 
         <v-card outlined class="rounded-xl border-light overflow-hidden">
@@ -50,13 +46,13 @@
 </template>
 
 <script>
-import OvertimeTypeForm from '~/components/overtime/OvertimeTypeForm.vue'
-import StatsGrid from '~/components/global/StatusOTconfig.vue'
+import OvertimeTypeForm from '~/components/overtimeconfig/OvertimeTypeForm.vue'
+import OvertimeSetting from '~/components/overtimeconfig/OvertimeSetting.vue'
+import StatsGrid from '~/components/overtimeconfig/StatsGrid.vue'
 import api from "~/service/api"
-
 export default {
   name: 'OvertimeTypePage',
-  components: { OvertimeTypeForm,  StatsGrid },
+  components: { OvertimeTypeForm,  StatsGrid, OvertimeSetting },
   data() {
     return {
       search: '',

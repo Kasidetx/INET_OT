@@ -1,10 +1,6 @@
 <template>
   <v-card outlined class="rounded-xl overflow-hidden border-light">
-    <v-progress-linear
-      v-if="loading"
-      indeterminate
-      color="primary"
-    ></v-progress-linear>
+    <v-progress-linear v-if="loading" indeterminate color="primary"></v-progress-linear>
 
     <v-simple-table class="custom-table">
       <template v-slot:default>
@@ -28,16 +24,13 @@
             </td>
 
             <td class="black--text font-weight-medium">
-              dear
+              {{ item.name || '-' }}
             </td>
 
             <td>
               <div class="d-flex align-center">
-                <div
-                  class="mr-2"
-                  style="width:10px;height:10px;border-radius:50%;"
-                  :style="{ background: getTypeColor(item.employee_type_id) }"
-                ></div>
+                <div class="mr-2" style="width:10px;height:10px;border-radius:50%;"
+                  :style="{ background: getTypeColor(item.employee_type_id) }"></div>
 
                 <span class="font-weight-bold">
                   {{ getEmployeeTypeName(item.employee_type_id) }}
@@ -71,27 +64,14 @@
 
             <td class="text-center">
               <div class="d-flex align-center justify-center">
-                <v-btn
-                  icon
-                  small
-                  color="primary"
-                  class="mr-1"
-                  @click="$emit('edit', item)"
-                >
+                <v-btn icon small color="primary" class="mr-1" @click="$emit('edit', item)">
                   <v-icon small>mdi-pencil-outline</v-icon>
                 </v-btn>
 
                 <v-tooltip bottom>
                   <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                      icon
-                      small
-                      :color="item.is_active ? 'error' : 'success'"
-                      :loading="updatingId === item.id"
-                      v-bind="attrs"
-                      v-on="on"
-                      @click="toggleStatus(item)"
-                    >
+                    <v-btn icon small :color="item.is_active ? 'error' : 'success'" :loading="updatingId === item.id"
+                      v-bind="attrs" v-on="on" @click="toggleStatus(item)">
                       <v-icon small>
                         {{ item.is_active
                           ? 'mdi-pause-circle-outline'
@@ -170,47 +150,47 @@ export default {
       return types[id] || "ทั่วไป"
     },
 
-   formatPeriod(period) {
-  const periods = {
-    'DURING_WORK': 'ในเวลางาน',
-    'OUTSIDE_WORK': 'นอกเวลางาน',
-    'BEFORE_WORK': 'ก่อนเริ่มงาน',
-    'AFTER_WORK': 'หลังเลิกงาน'
-  }
-  return periods[period] || period
-},
+    formatPeriod(period) {
+      const periods = {
+        'DURING_WORK': 'ในเวลางาน',
+        'OUTSIDE_WORK': 'นอกเวลางาน',
+        'BEFORE_WORK': 'ก่อนเริ่มงาน',
+        'AFTER_WORK': 'หลังเลิกงาน'
+      }
+      return periods[period] || period
+    },
 
 
-   getDisplayTime(item) {
+    getDisplayTime(item) {
 
-  // 1. พนักงานกะ + ทำงานในเวลา → ไม่ต้องแสดงอะไร
-  if (
-    item.employee_type_id !== 1 &&
-    item.ot_period === "DURING_WORK"
-  ) {
-    return "-"
-  }
+      // 1. พนักงานกะ + ทำงานในเวลา → ไม่ต้องแสดงอะไร
+      if (
+        item.employee_type_id !== 1 &&
+        item.ot_period === "DURING_WORK"
+      ) {
+        return "-"
+      }
 
-  // 2. พนักงานปกติ + ทำงานในเวลา โชว์เวลา FIXED_TIME เท่านั้น
-  if (
-    item.employee_type_id === 1 &&
-    item.ot_period === "DURING_WORK"
-  ) {
-    return item.start_time
-      ? item.start_time.substring(0, 5) + " น."
-      : "-"
-  }
+      // 2. พนักงานปกติ + ทำงานในเวลา โชว์เวลา FIXED_TIME เท่านั้น
+      if (
+        item.employee_type_id === 1 &&
+        item.ot_period === "DURING_WORK"
+      ) {
+        return item.start_time
+          ? item.start_time.substring(0, 5) + " น."
+          : "-"
+      }
 
-  // 3. กรณีอื่น ๆ ใช้ start_condition map
-  const map = {
-    AFTER_SHIFT: "หลังจบกะ",
-    AFTER_WORK: "หลังเลิกงาน",
-    BEFORE_WORK: "ก่อนเริ่มงาน",
-    FIXED_TIME: "-"
-  }
+      // 3. กรณีอื่น ๆ ใช้ start_condition map
+      const map = {
+        AFTER_SHIFT: "หลังจบกะ",
+        AFTER_WORK: "หลังเลิกงาน",
+        BEFORE_WORK: "ก่อนเริ่มงาน",
+        FIXED_TIME: "-"
+      }
 
-  return map[item.start_condition] || "-"
-},
+      return map[item.start_condition] || "-"
+    },
 
 
     // =====================================

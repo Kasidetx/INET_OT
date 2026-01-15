@@ -10,6 +10,12 @@
     <v-card-text>
       <v-row>
         <!-- ประเภทพนักงาน -->
+
+        <v-col cols="12">
+          <label class="field-label">ชื่อการตั้งค่า*</label>
+          <v-text-field v-model="form.name" placeholder="เช่น โอทีพนักงานรายวัน (จ-ศ)" outlined dense />
+        </v-col>
+
         <v-col cols="12">
           <label class="field-label">ประเภทพนักงาน*</label>
           <v-text-field v-model="form.employeeTypeName"
@@ -97,10 +103,10 @@
 
 <script>
 import api from '~/service/api'
-import { getExampleRules } from './helpers/otExampleRules'
-import { suggestRate } from './helpers/otRateHelper'
-import { getEmployeeTypeId, getEmployeeTypeName } from './helpers/otEmployeeHelper'
-import { calculateBreak } from './helpers/otBreakCalculator'
+import { getExampleRules } from '~/utils/overtimeconfig/otExampleRules'
+import { suggestRate } from '~/utils/overtimeconfig/otRateHelper'
+import { getEmployeeTypeId, getEmployeeTypeName } from '~/utils/overtimeconfig/otEmployeeHelper'
+import { calculateBreak } from '~/utils/overtimeconfig/otBreakCalculator'
 
 export default {
   name: 'OvertimeTypeForm',
@@ -118,6 +124,7 @@ export default {
       exampleRules: [],
       form: {
         id: null,
+        name: '',
         employeeTypeName: '',
         Worknametype: '',
         otPeriod: '',
@@ -148,8 +155,10 @@ export default {
           return
         }
 
-       
+
         this.form.id = val.id
+
+        this.form.name = val.name
 
         this.form.employeeTypeName =
           getEmployeeTypeName(val.employee_type_id)
@@ -182,6 +191,7 @@ export default {
     resetForm() {
       this.form = {
         id: null,
+        name: '',
         employeeTypeName: '',
         Worknametype: '',
         otPeriod: '',
@@ -276,6 +286,7 @@ export default {
       }
 
       const payload = {
+        name: this.form.name,
         employee_type_id: empTypeId,
         day_type:
           this.form.Worknametype === 'วันทำงาน'
