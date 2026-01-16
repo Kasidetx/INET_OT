@@ -26,7 +26,7 @@ const approvalModel = {
       level_position, action_at, action_by, created_at
     FROM approval
     WHERE request_id = ?
-      AND approval_status = 'PENDING'
+      AND approval_status IN (1, 2)
     ORDER BY level ASC
     LIMIT 1
   `;
@@ -45,7 +45,7 @@ const approvalModel = {
       requestId,
       a.level,
       a.approve_emp,
-      "PENDING",
+      a.level === 1 ? 1 : 2,
       new Date(),
     ]);
 
@@ -56,7 +56,6 @@ const approvalModel = {
 
   // update ผลอนุมัติ
   async updateStatus(id, data, conn = null) {
-    // ✅ เพิ่ม parameter conn
     const sql = `
       UPDATE approval
       SET
@@ -66,37 +65,42 @@ const approvalModel = {
         action_by = ?
       WHERE id = ?
     `;
-    const executor = conn || db; // ✅ ใช้ executor
-    const [result] = await executor.query(sql, [
+
+    const values = [
       data.approval_status,
       data.reason || null,
       new Date(),
       data.action_by,
       id,
-    ]);
+    ];
+
+    const executor = conn || db;
+    const [result] = await executor.query(sql, values);
     return result.affectedRows;
   },
 
   async addApprovalLog(data, conn = null) {
     const sql = `
-      INSERT INTO approval
-      (request_id, level, approve_emp, approval_status, reason, action_at, action_by, created_at)
+      INSERT INTO approval (
+        request_id, level, approve_emp, approval_status, 
+        reason, action_at, action_by, created_at
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    // ✅ เลือกใช้ conn ที่ส่งมา หรือใช้ db ปกติ
-    const executor = conn || db;
-    const now = new Date();
-    const [result] = await executor.query(sql, [
+    const values = [
       data.request_id,
       data.level,
       data.approve_emp,
       data.approval_status,
-      now,
       data.reason || null,
+      new Date(), // action_at
       data.action_by,
-      now,
-    ]);
+      new Date(), // created_at
+    ];
+
+    const executor = conn || db;
+    const [result] = await executor.query(sql, values);
     return result.insertId;
   },
 };
