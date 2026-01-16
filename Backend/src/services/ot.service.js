@@ -6,185 +6,25 @@ import OtDetailModel from "../models/otDetail.model.js";
 import OtConfigModel from "../models/otConfig.model.js";
 import HolidayModel from "../models/holiday.model.js";
 import WorkdayModel from "../models/workday.model.js";
+import EmpModel from "../models/emp.model.js";
 import dayjs from "dayjs";
-import { WORK_TIME, DAY_TYPE, OT_PERIOD } from "../config/constants.js";
-
-// --- Private Helpers (Logic การคำนวณ ย้ายมาจาก Model) ---
-const _getDayType = (dateObj, holidayList, workdayConfigs) => {
-  // 1. เช็ควันหยุดนักขัตฤกษ์ก่อน (Priority สูงสุด)
-  const isPublicHoliday = holidayList.includes(dateObj.format("YYYY-MM-DD"));
-  if (isPublicHoliday) return DAY_TYPE.HOLIDAY;
-
-  // 2. เช็คตารางงานจาก Database (Workday)
-  if (workdayConfigs && workdayConfigs.length > 0) {
-    const dayIndex = dateObj.day(); // 0 = อาทิตย์, 1 = จันทร์, ...
-
-    // หาว่าวันปัจจุบัน (dayIndex) ถูกตั้งค่าไว้ในรายการไหนบ้าง
-    const config = workdayConfigs.find((cfg) => {
-      // แปลง "1,2,3,4,5" เป็น Array [1,2,3,4,5]
-      const days = (cfg.work_day || "")
-        .split(",")
-        .map((d) => parseInt(d.trim()));
-      return days.includes(dayIndex);
-    });
-
-    // ถ้าเจอ Config และชั่วโมงงาน > 0 ถือเป็น "วันทำงาน"
-    // (เช่น เสาร์ ทำงาน 4 ชม. -> นับเป็น WORKDAY)
-    if (config && parseFloat(config.work_hour) > 0) {
-      return DAY_TYPE.WORKDAY;
-    }
-
-    // ถ้าไม่เจอ หรือเจอแต่ชั่วโมงงานเป็น 0 -> นับเป็น "วันหยุด"
-    return DAY_TYPE.HOLIDAY;
-  }
-
-  // Fallback: ถ้าไม่มี Config เลย ให้ใช้ค่าเดิม (หยุดเสาร์-อาทิตย์) กันระบบพัง
-  const isWeekend = [0, 6].includes(dateObj.day());
-  return isWeekend ? DAY_TYPE.HOLIDAY : DAY_TYPE.WORKDAY;
-};
-
-const _getPeriod = (cursor, workStart, workEnd) => {
-  if (cursor.isBefore(workStart)) return OT_PERIOD.BEFORE;
-  if (cursor.isBefore(workEnd)) return OT_PERIOD.DURING;
-  return OT_PERIOD.AFTER;
-};
-
-const _calculateNetHours = (duration, config) => {
-  if (!config) return duration;
-  if (config.require_break != 1) return duration;
-
-  let minutesToDeduct = 0;
-
-  // -----------------------------------------------------
-  // CASE 1: ทำงานวันหยุด + ในเวลา (Blue Zone ในรูปภาพ)
-  // เงื่อนไขซับซ้อนแบบขั้นบันได
-  // -----------------------------------------------------
-  if (config.day_type === "HOLIDAY" && config.ot_period === "DURING_WORK") {
-    // กลุ่ม พนักงานกะ 12 ชม. (Type ID = 3)
-    if (config.employee_type_id == 3) {
-      if (duration >= 11.5) {
-        // 11.30 ชม. (11.5)
-        minutesToDeduct = 90; // หัก 1 ชม. 30 นาที
-      } else if (duration >= 6.0) {
-        // 6.00 ชม.
-        minutesToDeduct = 60; // หัก 1 ชม.
-      } else if (duration >= 5.5) {
-        // 5.30 ชม. (5.5)
-        minutesToDeduct = 30; // หัก 30 นาที
-      }
-    }
-    // กลุ่ม พนักงานอื่นๆ (ปกติ, กะปกติ, รายชั่วโมง)
-    else {
-      if (duration >= 6.0) {
-        // 6.00 ชม.
-        minutesToDeduct = 60; // หัก 1 ชม.
-      } else if (duration >= 5.5) {
-        // 5.30 ชม. (5.5)
-        minutesToDeduct = 30; // หัก 30 นาที
-      }
-    }
-  }
-
-  // -----------------------------------------------------
-  // CASE 2: กรณีอื่นๆ (Green, Yellow, Grey Zones)
-  // ใช้ค่ามาตรฐานจาก Database (min_continuous_hours, break_minutes)
-  // เช่น ทำงานเกิน 2 ชม. หัก 30 นาที
-  // -----------------------------------------------------
-  else {
-    if (duration >= parseFloat(config.min_continuous_hours)) {
-      minutesToDeduct = parseInt(config.break_minutes);
-    }
-  }
-
-  // คำนวณเวลาสุทธิ
-  const deductionInHours = minutesToDeduct / 60.0;
-  let net = duration - deductionInHours;
-
-  return Math.max(0, parseFloat(net.toFixed(2)));
-};
-
-const _generateNextDocNo = (lastDocNo) => {
-  if (!lastDocNo) return "OT-1";
-  const parts = lastDocNo.split("-");
-  if (parts.length < 2) return "OT-1";
-  const numberPart = parseInt(parts[1], 10);
-  if (isNaN(numberPart)) return "OT-1";
-  return `OT-${numberPart + 1}`;
-};
+import {
+  calculateOtDetails,
+  generateNextDocNo,
+} from "../utils/otCalculation.js";
 
 // --- Service Logic ---
 const OtService = {
   // ฟังก์ชันคำนวณหลัก (ย้ายมาจาก Model)
-  calculateOtDetails(
-    startStr,
-    endStr,
-    typeId,
-    allConfigs,
-    holidayList = [],
-    workdayConfigs = []
-  ) {
-    const reqStart = dayjs(startStr);
-    const reqEnd = dayjs(endStr);
-    if (reqEnd.isBefore(reqStart))
-      throw new Error("End time must be after start time");
 
-    const dateStr = reqStart.format("YYYY-MM-DD");
-    const workStartBound = dayjs(`${dateStr} ${WORK_TIME.START}`);
-    const workEndBound = dayjs(`${dateStr} ${WORK_TIME.END}`);
-    const currentDayType = _getDayType(reqStart, holidayList, workdayConfigs);
-
-    let currentCursor = reqStart;
-    const detailsToInsert = [];
-    let grandTotalHours = 0;
-
-    while (currentCursor.isBefore(reqEnd)) {
-      const period = _getPeriod(currentCursor, workStartBound, workEndBound);
-      let nextCursor = reqEnd;
-
-      if (period === "BEFORE_WORK")
-        nextCursor = reqEnd.isBefore(workStartBound) ? reqEnd : workStartBound;
-      else if (period === "DURING_WORK")
-        nextCursor = reqEnd.isBefore(workEndBound) ? reqEnd : workEndBound;
-
-      if (currentDayType === DAY_TYPE.WORKDAY && period === OT_PERIOD.DURING) {
-        currentCursor = nextCursor;
-        continue;
-      }
-
-      const segmentDuration = nextCursor.diff(currentCursor, "minute") / 60.0;
-      if (segmentDuration > 0) {
-        const matchedConfig = allConfigs.find(
-          (cfg) =>
-            cfg.employee_type_id == typeId &&
-            cfg.day_type === currentDayType &&
-            cfg.ot_period === period
-        );
-
-        const config = matchedConfig || {
-          rate: 1.0,
-          min_continuous_hours: 99,
-          require_break: 0,
-          break_minutes: 0,
-        };
-
-        const netHours = _calculateNetHours(segmentDuration, config);
-
-        if (netHours > 0) {
-          detailsToInsert.push({
-            ot_start_time: currentCursor.format("YYYY-MM-DD HH:mm:ss"),
-            ot_end_time: nextCursor.format("YYYY-MM-DD HH:mm:ss"),
-            ot_hour: netHours,
-            ot_rate: config.rate || 1.0,
-          });
-          grandTotalHours += netHours;
-        }
-      }
-      currentCursor = nextCursor;
-    }
-    return {
-      total: parseFloat(grandTotalHours.toFixed(2)),
-      details: detailsToInsert,
-    };
+  async _getSystemConfigs() {
+    // ใช้ Promise.all เพื่อดึงข้อมูลพร้อมกัน (Parallel Execution) เร็วกว่า await ทีละบรรทัด
+    const [allConfigs, holidayList, workdayConfigs] = await Promise.all([
+      OtConfigModel.findAll(),
+      HolidayModel.getHolidayDateList(),
+      WorkdayModel.findAll(),
+    ]);
+    return { allConfigs, holidayList, workdayConfigs };
   },
 
   async createApprovalFlow(requestId, data, conn) {
@@ -200,22 +40,26 @@ const OtService = {
     try {
       await conn.beginTransaction();
 
-      // 1. Generate Doc No ที่ Service นี้ (ไม่ต้องให้ Controller ทำ)
       const lastDoc = await OtModel.getLastRequestDocNo();
-      const docNo = _generateNextDocNo(lastDoc);
+      const docNo = generateNextDocNo(lastDoc);
 
-      // 2. Prepare Calculation Data
       let total = 0;
       let details = [];
+
+      // คำนวณยอดเงินและเวลา
       if (data.start_time && data.end_time) {
-        const holidayList = await HolidayModel.getHolidayDateList();
-        const allConfigs = await OtConfigModel.findAll();
-        const workdayConfigs = await WorkdayModel.findAll();
-        // เรียกใช้ฟังก์ชันใน Service ตัวเอง
-        const calcResult = this.calculateOtDetails(
+        const { allConfigs, holidayList, workdayConfigs } =
+          await this._getSystemConfigs();
+
+        // หา Type พนักงาน
+        const targetEmpId = data.emp_id || data.created_by;
+        const empProfile = await EmpModel.findByEmpId(targetEmpId);
+        const realEmpTypeId = empProfile ? empProfile.employee_type_id : 1;
+
+        const calcResult = calculateOtDetails(
           data.start_time,
           data.end_time,
-          data.type || 1,
+          realEmpTypeId,
           allConfigs,
           holidayList,
           workdayConfigs
@@ -224,11 +68,11 @@ const OtService = {
         details = calcResult.details;
       }
 
-      // 3. Insert Request
+      // บันทึก Request -> OT Header
       const requestId = await OtModel.createRequest(
         {
           doc_no: docNo,
-          title: data.title || data.description || "ขออนุมัติทำโอที",
+          title: data.title || "ขออนุมัติทำโอที",
           type: data.type || 1,
           sts: data.sts ?? 1,
           created_by: data.created_by,
@@ -236,7 +80,6 @@ const OtService = {
         conn
       );
 
-      // 4. Insert OT Header
       const createdOt = await OtModel.create(
         {
           request_id: requestId,
@@ -250,12 +93,12 @@ const OtService = {
         conn
       );
 
-      // 5. Insert Details
+      // บันทึก Details
       if (details.length > 0) {
         await OtDetailModel.createMany(createdOt.id, details, conn);
       }
 
-      // 6. Create Approval Flow (ถ้าไม่ใช่ Draft)
+      // สร้าง Flow อนุมัติ (ถ้าไม่ใช่ Draft)
       if (data.sts !== 0) {
         if (!data.leader_emp_id) throw new Error("ต้องระบุรหัสหัวหน้างาน");
         await this.createApprovalFlow(requestId, { ...data }, conn);
@@ -275,16 +118,12 @@ const OtService = {
     const conn = await db.getConnection();
     try {
       await conn.beginTransaction();
-
-      // ตรวจสอบว่า OT นี้มีอยู่จริงไหม
       const existingOt = await OtModel.findById(id);
       if (!existingOt) throw new Error("ไม่พบข้อมูล OT");
 
-      // คำนวณใหม่ (Logic เดียวกับ create)
       let total = existingOt.total;
       let details = [];
 
-      // ถ้ามีการเปลี่ยนเวลา ต้องคำนวณใหม่
       if (data.start_time || data.end_time) {
         const startTime = data.start_time || existingOt.start_time;
         const endTime = data.end_time || existingOt.end_time;
@@ -292,10 +131,16 @@ const OtService = {
         const allConfigs = await OtConfigModel.findAll();
         const workdayConfigs = await WorkdayModel.findAll();
 
-        const calcResult = this.calculateOtDetails(
+        // ✅ [FIX] ดึง Employee Type
+        // ต้องใช้ emp_id ของเดิมจาก OT หรืออันใหม่ที่ส่งมาแก้ไข
+        const targetEmpId = data.emp_id || existingOt.emp_id;
+        const empProfile = await EmpModel.findByEmpId(targetEmpId);
+        const realEmpTypeId = empProfile ? empProfile.employee_type_id : 1;
+
+        const calcResult = calculateOtDetails(
           startTime,
           endTime,
-          data.type || 1,
+          realEmpTypeId, // ✅ ใช้ Type จริง
           allConfigs,
           holidayList,
           workdayConfigs
@@ -396,15 +241,22 @@ const OtService = {
 
       // 1. วนลูปคำนวณและอัปเดตรายละเอียด OT แต่ละรายการ
       for (const item of items) {
-        // ใช้ Model ดึงข้อมูล (Read ไม่ต้องใช้ conn ก็ได้)
         const otData = await OtModel.findById(item.id);
         if (!otData) continue;
 
-        // คำนวณยอดเงิน/ชั่วโมงใหม่ (เผื่อมีการแก้ไขเวลาก่อนกดส่ง)
-        const { total, details } = this.calculateOtDetails(
+        // -------------------------------------------------------
+        // ✅ [FIX START] ต้องหา Type พนักงานก่อนคำนวณ
+        // -------------------------------------------------------
+        const targetEmpId = otData.emp_id || otData.created_by;
+        const empProfile = await EmpModel.findByEmpId(targetEmpId);
+        const realEmpTypeId = empProfile ? empProfile.employee_type_id : 1;
+        // -------------------------------------------------------
+
+        // คำนวณยอดเงิน/ชั่วโมงใหม่
+        const { total, details } = calculateOtDetails(
           otData.start_time,
           otData.end_time,
-          1, // สมมติ type=1 (OT ปกติ)
+          realEmpTypeId, // ✅ ใส่ตัวแปรที่หามาแทนเลข 1
           allConfigs,
           holidayList,
           workdayConfigs
@@ -448,66 +300,66 @@ const OtService = {
 
   async recalculateAllPending() {
     try {
-      // 1. ดึงรายการ OT ที่ค้างอยู่ทั้งหมด
+      // 1. ดึงรายการ OT ที่ยังค้างอยู่ (Pending)
       const pendingOts = await OtModel.findPendingOtIds();
+      if (pendingOts.length === 0) return { message: "No pending OTs" };
 
-      if (pendingOts.length === 0)
-        return { message: "No pending OTs to recalculate" };
-
-      // 2. ดึง Config และ Holiday มารอไว้ครั้งเดียว (Performance)
-      const allConfigs = await OtConfigModel.findAll();
-      const holidayList = await HolidayModel.getHolidayDateList();
-      const workdayConfigs = await WorkdayModel.findAll();
+      // 2. เตรียม Config ไว้ครั้งเดียว เพื่อไม่ต้อง Query ซ้ำใน Loop
+      const { allConfigs, holidayList, workdayConfigs } =
+        await this._getSystemConfigs();
 
       const conn = await db.getConnection();
-      await conn.beginTransaction();
 
       try {
+        await conn.beginTransaction(); // เริ่ม Transaction
+
+        // ✅ แก้ไข: ใช้ for...of เพื่อวนลูปทำทีละรายการ (ปลอดภัยกว่า Promise.all บน conn เดียว)
         for (const ot of pendingOts) {
-          // 3. คำนวณใหม่โดยใช้ฟังก์ชันเดิม (Type=1 สมมติเป็นค่า default ถ้าไม่มีการเก็บ Type ใน OT)
-          // หมายเหตุ: ถ้าใน OT มีเก็บ type ไว้ควรดึงมาใช้ ตรงนี้สมมติเป็น 1 (Normal)
-          const calcResult = this.calculateOtDetails(
+          const realEmpTypeId = ot.preloaded_emp_type_id;
+
+          // คำนวณยอดเงินและเวลาใหม่
+          const calcResult = calculateOtDetails(
             ot.start_time,
             ot.end_time,
-            1,
+            realEmpTypeId,
             allConfigs,
             holidayList,
             workdayConfigs
           );
 
-          // 4. ลบ Detail เก่า -> ลงใหม่
+          // ลบรายละเอียดเดิมทิ้ง (ใช้ conn เดียวกัน)
+          await conn.query("DELETE FROM ot_detail WHERE ot_id = ?", [ot.id]);
+
+          // บันทึกรายละเอียดใหม่ (ถ้ามี)
           if (calcResult.details.length > 0) {
-            await conn.query("DELETE FROM ot_detail WHERE ot_id = ?", [ot.id]);
             await OtDetailModel.createMany(ot.id, calcResult.details, conn);
           }
 
-          // 5. อัปเดตยอดรวมที่ Header
+          // อัปเดตยอดรวมที่ Header (ส่ง description: undefined เพื่อคงค่าเดิมไว้)
           await OtModel.update(
             ot.id,
-            {
-              start_time: ot.start_time,
-              end_time: ot.end_time,
-              emp_id: null, // ไม่เปลี่ยน
-              created_by: null, // ไม่เปลี่ยน
-              description: undefined, // ไม่เปลี่ยน
-              total: calcResult.total,
-            },
+            { ...ot, total: calcResult.total, description: undefined },
             conn
           );
         }
 
-        await conn.commit();
+        await conn.commit(); // ยืนยันข้อมูลทั้งหมดลง Database
         console.log(`Recalculated ${pendingOts.length} pending OTs.`);
+        return {
+          success: true,
+          message: `Recalculated ${pendingOts.length} pending OTs.`,
+        };
       } catch (err) {
-        await conn.rollback();
-        console.error("Recalculation error inside loop:", err);
+        await conn.rollback(); // ย้อนกลับถ้ารายการใดรายการหนึ่งพัง
+        console.error("Recalculation error inside transaction:", err);
+        throw err; // ส่ง Error ออกไปให้ Controller รับรู้
       } finally {
-        conn.release();
+        conn.release(); // คืน Connection
       }
     } catch (err) {
       console.error("Global Recalculation Error:", err);
+      throw err;
     }
   },
 };
-
 export default OtService;

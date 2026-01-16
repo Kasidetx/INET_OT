@@ -28,7 +28,7 @@ export const getOtById = catchAsync(async (req, res) => {
 export const createOt = catchAsync(async (req, res) => {
   const body = req.body;
 
-  // 1. Validation เบื้องต้น
+  // Basic Validation
   if (!body.start_time || !body.end_time || !body.emp_id) {
     throw {
       statusCode: 400,
@@ -36,24 +36,21 @@ export const createOt = catchAsync(async (req, res) => {
     };
   }
 
-  // 2. เรียก Service เลย (ไม่ต้องหา DocNo ที่นี่แล้ว ให้ Service ทำ)
+  // เรียก Service
   const result = await OtService.createOt({
     ...body,
-    sts: body.sts ?? 1, // Default Submit ถ้าไม่ส่งมา
+    sts: body.sts ?? 1,
   });
 
-  sendResponse(res, 201, result, "บันทึก OT และสร้างรายการอนุมัติสำเร็จ");
+  sendResponse(res, 201, result, "บันทึก OT สำเร็จ");
 });
 
 export const updateOt = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const body = req.body;
-
-  // ✅ เรียกใช้ Service Update
-  const result = await OtService.updateOt(id, body);
-
+  const result = await OtService.updateOt(id, req.body);
   sendResponse(res, 200, result, "อัปเดตข้อมูลสำเร็จ");
 });
+
 export const submitOtRequest = catchAsync(async (req, res) => {
   // Controller นี้ดูดีแล้ว รับค่า -> เรียก Service -> ตอบกลับ
   const { items, leader_emp_id } = req.body;

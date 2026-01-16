@@ -60,13 +60,21 @@ const OtModel = {
   },
 
   async findRequestById(id) {
-    const sql = `SELECT * FROM request WHERE id = ?`;
+    const sql = `
+    SELECT id, doc_no, title, type, sts, created_at, created_by, reason
+    FROM request
+    WHERE id = ?
+  `;
     const [rows] = await db.query(sql, [id]);
     return rows[0] || null;
   },
 
   async findById(id) {
-    const sql = `SELECT * FROM ot WHERE id = ?`;
+    const sql = `
+    SELECT id, request_id, start_time, end_time, description, emp_id, total, created_at, created_by
+    FROM ot
+    WHERE id = ?
+  `;
     const [rows] = await db.query(sql, [id]);
     return rows[0] || null;
   },
@@ -89,7 +97,7 @@ const OtModel = {
       data.type,
       data.sts,
       data.created_by,
-      new Date()
+      new Date(),
     ]);
     return result.insertId;
   },
@@ -164,11 +172,14 @@ const OtModel = {
   },
 
   async findPendingOtIds() {
-    // เลือกเฉพาะใบที่ยังไม่ Approved(3) และยังไม่ Cancel/Reject
+    // ✅ แก้ไข SQL: Join Employee เพื่อเอา type_id มาเลย
     const sql = `
-      SELECT ot.id, ot.start_time, ot.end_time 
+      SELECT 
+        ot.id, ot.start_time, ot.end_time, ot.emp_id, ot.created_by,
+        COALESCE(e.employee_type_id, 1) AS preloaded_emp_type_id
       FROM ot 
       JOIN request r ON ot.request_id = r.id 
+      LEFT JOIN employee e ON e.emp_id = COALESCE(ot.emp_id, ot.created_by)
       WHERE r.sts IN (0, 1, 2) 
     `;
     const [rows] = await db.query(sql);
