@@ -13,8 +13,11 @@ export const getAllEmployee = catchAsync(async (req, res) => {
 
 export const getRequest = catchAsync(async (req, res) => {
   const { emp_id } = req.query;
+  
+  // ✅ เปลี่ยนมาใช้ฟังก์ชันที่ดึงจาก View
   const data = await OtModel.requestOt(emp_id);
-  sendResponse(res, 200, data, "ดึงรายการคำขอ OT สำเร็จ");
+  
+  sendResponse(res, 200, data, "ดึงรายการคำขอ OT พร้อมรายละเอียดสำเร็จ");
 });
 
 export const getOtById = catchAsync(async (req, res) => {
@@ -26,20 +29,21 @@ export const getOtById = catchAsync(async (req, res) => {
 });
 
 export const createOt = catchAsync(async (req, res) => {
-  const body = req.body;
+  const { start_time, end_time, emp_id, sts, ...rest } = req.body;
 
-  // Basic Validation
-  if (!body.start_time || !body.end_time || !body.emp_id) {
+  if (!start_time || !end_time || !emp_id) {
     throw {
       statusCode: 400,
       message: "ข้อมูลไม่ครบถ้วน (start_time, end_time, emp_id)",
     };
   }
 
-  // เรียก Service
   const result = await OtService.createOt({
-    ...body,
-    sts: body.sts ?? 1,
+    start_time,
+    end_time,
+    emp_id,
+    sts: sts ?? 1, // Default status = 1 (Submit)
+    ...rest,
   });
 
   sendResponse(res, 201, result, "บันทึก OT สำเร็จ");
@@ -52,15 +56,23 @@ export const updateOt = catchAsync(async (req, res) => {
 });
 
 export const submitOtRequest = catchAsync(async (req, res) => {
-  // Controller นี้ดูดีแล้ว รับค่า -> เรียก Service -> ตอบกลับ
   const { items, leader_emp_id } = req.body;
 
-  if (!items || items.length === 0)
-    throw { statusCode: 400, message: "กรุณาเลือกรายการ" };
-  if (!leader_emp_id) throw { statusCode: 400, message: "กรุณาระบุหัวหน้างาน" };
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    throw {
+      statusCode: 400,
+      message: "กรุณาเลือกรายการ OT อย่างน้อย 1 รายการ",
+    };
+  }
+  if (!leader_emp_id) {
+    throw {
+      statusCode: 400,
+      message: "กรุณาระบุรหัสหัวหน้างาน (leader_emp_id)",
+    };
+  }
 
   const result = await OtService.submitOtRequest(items, leader_emp_id);
-  sendResponse(res, 200, result, "ส่งคำขอสำเร็จ");
+  sendResponse(res, 200, result, "ส่งคำขออนุมัติสำเร็จ");
 });
 
 export const deleteOt = catchAsync(async (req, res) => {

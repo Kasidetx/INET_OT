@@ -37,21 +37,20 @@ const OtService = {
 
   async createOt(data) {
     const conn = await db.getConnection();
-    try {
-      await conn.beginTransaction();
+    await conn.beginTransaction();
 
+    try {
+      // 1. Prepare Data
       const lastDoc = await OtModel.getLastRequestDocNo();
       const docNo = generateNextDocNo(lastDoc);
-
       let total = 0;
       let details = [];
 
-      // คำนวณยอดเงินและเวลา
+      // 2. Calculate OT (ถ้ามีเวลา)
       if (data.start_time && data.end_time) {
         const { allConfigs, holidayList, workdayConfigs } =
           await this._getSystemConfigs();
 
-        // หา Type พนักงาน
         const targetEmpId = data.emp_id || data.created_by;
         const empProfile = await EmpModel.findByEmpId(targetEmpId);
         const realEmpTypeId = empProfile ? empProfile.employee_type_id : 1;
@@ -68,7 +67,7 @@ const OtService = {
         details = calcResult.details;
       }
 
-      // บันทึก Request -> OT Header
+      // 3. Insert Request & Header
       const requestId = await OtModel.createRequest(
         {
           doc_no: docNo,
@@ -93,12 +92,11 @@ const OtService = {
         conn
       );
 
-      // บันทึก Details
+      // 4. Insert Details & Flow
       if (details.length > 0) {
         await OtDetailModel.createMany(createdOt.id, details, conn);
       }
 
-      // สร้าง Flow อนุมัติ (ถ้าไม่ใช่ Draft)
       if (data.sts !== 0) {
         if (!data.leader_emp_id) throw new Error("ต้องระบุรหัสหัวหน้างาน");
         await this.createApprovalFlow(requestId, { ...data }, conn);
@@ -299,66 +297,59 @@ const OtService = {
   },
 
   async recalculateAllPending() {
+    // 1. หา OT ที่ค้างอยู่
+    const pendingOts = await OtModel.findPendingOtIds();
+    if (pendingOts.length === 0) return { message: "No pending OTs" };
+
+    // 2. ดึง Config ครั้งเดียว
+    const { allConfigs, holidayList, workdayConfigs } =
+      await this._getSystemConfigs();
+
+    const conn = await db.getConnection();
+    await conn.beginTransaction();
+
     try {
-      // 1. ดึงรายการ OT ที่ยังค้างอยู่ (Pending)
-      const pendingOts = await OtModel.findPendingOtIds();
-      if (pendingOts.length === 0) return { message: "No pending OTs" };
+      // 3. Loop Process (Sequential)
+      for (const ot of pendingOts) {
+        const realEmpTypeId = ot.preloaded_emp_type_id || 1;
 
-      // 2. เตรียม Config ไว้ครั้งเดียว เพื่อไม่ต้อง Query ซ้ำใน Loop
-      const { allConfigs, holidayList, workdayConfigs } =
-        await this._getSystemConfigs();
+        // คำนวณใหม่
+        const calcResult = calculateOtDetails(
+          ot.start_time,
+          ot.end_time,
+          realEmpTypeId,
+          allConfigs,
+          holidayList,
+          workdayConfigs
+        );
 
-      const conn = await db.getConnection();
+        // Update DB
+        await conn.query("DELETE FROM ot_detail WHERE ot_id = ?", [ot.id]);
 
-      try {
-        await conn.beginTransaction(); // เริ่ม Transaction
-
-        // ✅ แก้ไข: ใช้ for...of เพื่อวนลูปทำทีละรายการ (ปลอดภัยกว่า Promise.all บน conn เดียว)
-        for (const ot of pendingOts) {
-          const realEmpTypeId = ot.preloaded_emp_type_id;
-
-          // คำนวณยอดเงินและเวลาใหม่
-          const calcResult = calculateOtDetails(
-            ot.start_time,
-            ot.end_time,
-            realEmpTypeId,
-            allConfigs,
-            holidayList,
-            workdayConfigs
-          );
-
-          // ลบรายละเอียดเดิมทิ้ง (ใช้ conn เดียวกัน)
-          await conn.query("DELETE FROM ot_detail WHERE ot_id = ?", [ot.id]);
-
-          // บันทึกรายละเอียดใหม่ (ถ้ามี)
-          if (calcResult.details.length > 0) {
-            await OtDetailModel.createMany(ot.id, calcResult.details, conn);
-          }
-
-          // อัปเดตยอดรวมที่ Header (ส่ง description: undefined เพื่อคงค่าเดิมไว้)
-          await OtModel.update(
-            ot.id,
-            { ...ot, total: calcResult.total, description: undefined },
-            conn
-          );
+        if (calcResult.details.length > 0) {
+          await OtDetailModel.createMany(ot.id, calcResult.details, conn);
         }
 
-        await conn.commit(); // ยืนยันข้อมูลทั้งหมดลง Database
-        console.log(`Recalculated ${pendingOts.length} pending OTs.`);
-        return {
-          success: true,
-          message: `Recalculated ${pendingOts.length} pending OTs.`,
-        };
-      } catch (err) {
-        await conn.rollback(); // ย้อนกลับถ้ารายการใดรายการหนึ่งพัง
-        console.error("Recalculation error inside transaction:", err);
-        throw err; // ส่ง Error ออกไปให้ Controller รับรู้
-      } finally {
-        conn.release(); // คืน Connection
+        await OtModel.update(
+          ot.id,
+          {
+            ...ot,
+            total: calcResult.total,
+            description: undefined, // ไม่แก้ Description เดิม
+          },
+          conn
+        );
       }
+
+      await conn.commit();
+      console.log(`Recalculated ${pendingOts.length} pending OTs.`);
+      return { success: true, count: pendingOts.length };
     } catch (err) {
-      console.error("Global Recalculation Error:", err);
+      await conn.rollback();
+      console.error("Recalculation error:", err);
       throw err;
+    } finally {
+      conn.release();
     }
   },
 };

@@ -2,16 +2,11 @@ import db from "../config/db.js";
 
 const OtModel = {
   async AllEmployee(empId) {
-    // เรียก Stored Procedure ง่ายๆ บรรทัดเดียว
-    // ถ้า empId ไม่มีค่า ให้ส่ง null ไป
     const sql = `CALL GetEmployeeOTList(?)`;
     const [result] = await db.query(sql, [empId || null]);
 
-    // ผลลัพธ์ของ Stored Procedure จะอยู่ใน array index ที่ 0
-    const rows = result[0];
-
-    // แปลง JSON String เป็น Object (เผื่อ Driver ส่งมาเป็น String)
-    return rows.map((row) => ({
+    // Parse JSON result from Stored Procedure
+    return result[0].map((row) => ({
       ...row,
       requests:
         typeof row.requests === "string"
@@ -104,9 +99,13 @@ const OtModel = {
 
   async create(data, conn = null) {
     const sql = `
-      INSERT INTO ot (request_id, start_time, end_time, description, emp_id, total, created_by)
+      INSERT INTO ot (
+        request_id, start_time, end_time, description, 
+        emp_id, total, created_by
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
+
     const values = [
       data.request_id,
       data.start_time,
@@ -116,6 +115,7 @@ const OtModel = {
       data.total || 0,
       data.created_by,
     ];
+
     const executor = conn || db;
     const [result] = await executor.query(sql, values);
     return { id: result.insertId, ...data };
@@ -172,7 +172,6 @@ const OtModel = {
   },
 
   async findPendingOtIds() {
-    // ✅ แก้ไข SQL: Join Employee เพื่อเอา type_id มาเลย
     const sql = `
       SELECT 
         ot.id, ot.start_time, ot.end_time, ot.emp_id, ot.created_by,
@@ -180,7 +179,7 @@ const OtModel = {
       FROM ot 
       JOIN request r ON ot.request_id = r.id 
       LEFT JOIN employee e ON e.emp_id = COALESCE(ot.emp_id, ot.created_by)
-      WHERE r.sts IN (0, 1, 2) 
+      WHERE r.sts IN (0, 1, 2)
     `;
     const [rows] = await db.query(sql);
     return rows;
