@@ -51,14 +51,19 @@
               </v-col>
               <v-col cols="12" class="py-1">
                 <v-row no-gutters>
-                  <v-col cols="2" class="black--text text--darken-1" style="max-width: 140px;">หมายเหตุ</v-col>
+                  <v-col cols="2" class="black--text text--darken-1" style="max-width: 140px;">
+                    {{ [4, 5, 6].includes(selectedItem.status) ? 'เหตุผล' : 'รายละเอียด' }}
+                  </v-col>
+
                   <v-col cols="1" class="text-center" style="max-width: 40px;">:</v-col>
+
                   <v-col class="black--text">
                     <span v-if="[4, 5, 6].includes(selectedItem.status)" class="red--text">
-                      {{ selectedItem.cancellation_reason || '-' }}
+                      {{ selectedItem.cancellation_reason }}
                     </span>
+
                     <span v-else>
-                      {{ selectedItem.title || '-' }}
+                      -
                     </span>
                   </v-col>
                 </v-row>

@@ -11,21 +11,19 @@
                         <div class="caption grey--text">Tracking</div>
                     </div>
                 </div>
-
                 <v-btn icon @click="close">
                     <v-icon color="#1565C0">mdi-close</v-icon>
                 </v-btn>
             </div>
 
             <v-card-text class="px-8 pt-6 pb-2">
+                
                 <div class="text-h6 font-weight-bold mb-4">ข้อมูลเอกสาร</div>
 
                 <div class="d-flex align-center mb-3">
                     <div class="grey--text text--darken-1" style="min-width:140px;">สถานะ</div>
                     <div class="mr-3">:</div>
-                    <v-chip small :color="statusChip.color" :text-color="statusChip.textColor" class="font-weight-bold">
-                        {{ statusChip.label }}
-                    </v-chip>
+                    <Status :value="docStatus" />
                 </div>
 
                 <div class="d-flex align-center mb-3">
@@ -48,43 +46,48 @@
 
                 <div class="text-subtitle-1 font-weight-bold mb-3">ลำดับการอนุมัติ</div>
 
-                <div class="rounded-lg pa-4" style="border:1px solid #ECECEC; background:#FAFAFA;">
+                <div v-if="loading" class="d-flex justify-center py-4">
+                    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                </div>
+
+                <div v-else class="rounded-lg pa-4" style="border:1px solid #ECECEC; background:#FAFAFA;">
+                    
                     <div class="d-flex align-center">
-                        <div class="step-dot mr-4" :class="step1.dotClass">1</div>
+                        <div class="step-dot mr-4" :class="getDotClass(step1Id)">1</div>
                         <div class="flex-grow-1">
-                            <div class="font-weight-bold">ลำดับอนุมัติที่ 1</div>
+                            <div class="font-weight-bold">ลำดับอนุมัติที่ 1 (หัวหน้างาน)</div>
                             <div class="caption grey--text text--darken-1">
-                                {{ mockHead.title }}
+                                {{ headApprover.name }}
                             </div>
                             <div class="caption grey--text text--darken-1">
-                                {{ mockHead.name }}
+                                {{ headApprover.actionDate }}
+                            </div>
+                            <div v-if="headApprover.reason" class="caption red--text mt-1">
+                                หมายเหตุ: {{ headApprover.reason }}
                             </div>
                         </div>
 
-                        <v-chip small :color="step1.chip.color" :text-color="step1.chip.textColor"
-                            class="font-weight-bold">
-                            {{ step1.chip.label }}
-                        </v-chip>
+                        <Status :value="step1Id" />
                     </div>
 
                     <v-divider class="my-4"></v-divider>
 
-                    <div v-if="showStep2" class="d-flex align-center">
-                        <div class="step-dot mr-4" :class="step2.dotClass">2</div>
+                    <div class="d-flex align-center">
+                        <div class="step-dot mr-4" :class="getDotClass(step2Id)">2</div>
                         <div class="flex-grow-1">
-                            <div class="font-weight-bold">ลำดับอนุมัติที่ 2</div>
+                            <div class="font-weight-bold">ลำดับอนุมัติที่ 2 (HR)</div>
                             <div class="caption grey--text text--darken-1">
-                                {{ mockHr.title }}
+                                {{ hrApprover.name }}
                             </div>
                             <div class="caption grey--text text--darken-1">
-                                {{ mockHr.name }}
+                                {{ hrApprover.actionDate }}
+                            </div>
+                            <div v-if="hrApprover.reason" class="caption red--text mt-1">
+                                หมายเหตุ: {{ hrApprover.reason }}
                             </div>
                         </div>
 
-                        <v-chip small :color="step2.chip.color" :text-color="step2.chip.textColor"
-                            class="font-weight-bold">
-                            {{ step2.chip.label }}
-                        </v-chip>
+                        <Status :value="step2Id" />
                     </div>
                 </div>
 
@@ -100,117 +103,136 @@
 </template>
 
 <script>
+import api from "~/service/api";
+import Status from "@/components/global/Status.vue"; // ✅ Import Component
+
 export default {
     name: "TrackingDialog",
+    components: { Status }, // ✅ Register Component
     props: {
         value: { type: Boolean, default: false },
         item: { type: Object, default: null },
+    },
+    data() {
+        return {
+            loading: false,
+            approvalHistory: []
+        };
     },
     computed: {
         visible: {
             get() { return this.value },
             set(v) { this.$emit("input", v) }
         },
-
-        // Mock Data (สามารถเปลี่ยนไปดึงจาก item ได้ถ้ามีข้อมูล)
-        mockHead() {
-            return { title: "หัวหน้า", name: "Dear" }
-        },
-        mockHr() {
-            return { title: "HR", name: "Optra" }
-        },
-
-        statusId() {
+        docStatus() {
             return Number(this.item?.status || 0)
         },
+        
+        // ข้อมูล Header (ดึงจาก props item)
+        docNo() { return this.item?.docNo || "-" },
+        totalHours() { return this.item?.hours || "-" },
+        transDate() { return this.item?.transDate || "-" },
 
-        // ✅ แก้ไข: รองรับชื่อตัวแปรที่หลากหลาย (reqNo, doc_no, docs_no)
-        docNo() {
-            if (!this.item) return "-";
-            return this.item.docNo || "-";
+        // --- ดึงข้อมูลผู้อนุมัติจาก History ---
+        headApprover() {
+            const log = this.approvalHistory.find(x => x.level === 1);
+            return {
+                name: log ? (log.approve_name || log.approve_emp) : '-',
+                actionDate: log && log.action_at ? this.formatDate(log.action_at) : '',
+                status: log ? Number(log.approval_status) : 1,
+                reason: log ? log.reason : ''
+            };
+        },
+        hrApprover() {
+            const log = this.approvalHistory.find(x => x.level === 2);
+            return {
+                name: log ? (log.approve_name || log.approve_emp) : '-',
+                actionDate: log && log.action_at ? this.formatDate(log.action_at) : '',
+                status: log ? Number(log.approval_status) : 1,
+                reason: log ? log.reason : ''
+            };
         },
 
-        totalHours() {
-            return this.item?.hours || "-"
+        // --- ✅ Logic คำนวณ Status ID สำหรับส่งให้ Component ---
+        
+        // สถานะของ Step 1 (หัวหน้า)
+        step1Id() {
+            if (this.docStatus === 6) return 6; // ยกเลิก
+            
+            const s = this.headApprover.status;
+            if (s === 3) return 3; // อนุมัติ (เขียว)
+            if (s === 4) return 4; // หัวหน้าไม่อนุมัติ (แดง)
+            
+            return 1; // รอหัวหน้าอนุมัติ (ส้ม) - Default
         },
 
-        transDate() {
-            return this.item?.transDate || "-"
-        },
+        // สถานะของ Step 2 (HR)
+        step2Id() {
+            if (this.docStatus === 6) return 6; // ยกเลิก
+            
+            // ถ้าหัวหน้า Reject -> HR = รอดำเนินการ (0) หรือจะใช้สถานะอื่นตามต้องการ
+            if (this.docStatus === 4) return 0; 
 
-        showStep2() {
-            return true; // Parallel flow, show both always
-        },
+            const s = this.hrApprover.status;
+            if (s === 3) return 3; // อนุมัติ (เขียว)
+            if (s === 5) return 5; // HR ไม่อนุมัติ (แดง)
 
-        // Chip สถานะด้านบนสุด
-        statusChip() {
-            const s = this.statusId
-            const map = {
-                1: { label: "รอหัวหน้าอนุมัติ", color: "#FFE8C2", textColor: "#B45309" },
-                2: { label: "รอ HR อนุมัติ", color: "#FEF3C7", textColor: "#B45309" },
-                3: { label: "อนุมัติแล้ว", color: "#DCFCE7", textColor: "#166534" },
-                4: { label: "หัวหน้าไม่อนุมัติ", color: "#FEE2E2", textColor: "#991B1B" },
-                5: { label: "HR ไม่อนุมัติ", color: "#FEE2E2", textColor: "#991B1B" },
-                6: { label: "ยกเลิก", color: "#E5E7EB", textColor: "#374151" }
+            // ถ้าภาพรวมผ่านหัวหน้ามาแล้ว (Status >= 2) -> HR ต้องเป็น "รออนุมัติ" (2)
+            if (this.docStatus >= 2) return 2; // รอ HR อนุมัติ (ส้ม)
+
+            return 0; // ยังไม่ถึงคิว -> รอดำเนินการ (เหลืองอ่อน/เทา ตาม Config)
+        }
+    },
+    watch: {
+        value: {
+            immediate: true, // ✅ โหลดทันทีที่เปิด
+            handler(val) {
+                if (val && this.item?.requestId) {
+                    this.fetchHistory();
+                }
             }
-            return map[s] || { label: "-", color: "#E5E7EB", textColor: "#374151" }
-        },
-
-        // Logic สถานะสำหรับ Step 1 (หัวหน้า)
-        step1() {
-            const s = this.statusId
-            // Cancellation
-            if (s === 6) return this.makeStep("cancelled")
-            // Rejection
-            if (s === 4) return this.makeStep("rejected")
-            
-            // Approval (Check flag first, fallback to status which implies approval)
-            if (this.item?.approvedHead || s === 2 || s === 3 || s === 5) return this.makeStep("approved")
-            
-            return this.makeStep("pending")
-        },
-
-        // Logic สถานะสำหรับ Step 2 (HR)
-        step2() {
-            const s = this.statusId
-            if (s === 6) return this.makeStep("cancelled")
-            if (s === 5) return this.makeStep("rejected")
-
-            // Approval
-            if (this.item?.approvedHr || s === 3) return this.makeStep("approved")
-            
-            return this.makeStep("pending")
-        },
+        }
     },
     methods: {
         close() {
             this.$emit("input", false)
         },
-
-        makeStep(state) {
-            const cfg = {
-                waiting: {
-                    dotClass: "dot-wait",
-                    chip: { label: "รออนุมัติ", color: "#F3F4F6", textColor: "#9CA3AF" }
-                },
-                pending: {
-                    dotClass: "dot-pending",
-                    chip: { label: "รอดำเนินการ", color: "#FFE8C2", textColor: "#B45309" }
-                },
-                approved: {
-                    dotClass: "dot-approved",
-                    chip: { label: "อนุมัติแล้ว", color: "#DCFCE7", textColor: "#166534" }
-                },
-                rejected: {
-                    dotClass: "dot-rejected",
-                    chip: { label: "ไม่อนุมัติ", color: "#FEE2E2", textColor: "#991B1B" }
-                },
-                cancelled: {
-                    dotClass: "dot-cancelled",
-                    chip: { label: "ยกเลิก", color: "#E5E7EB", textColor: "#374151" }
+        async fetchHistory() {
+            this.loading = true;
+            this.approvalHistory = [];
+            try {
+                // เรียก API
+                const res = await api.get(`/api/approval/request/${this.item.requestId}`);
+                if (res.data) {
+                    this.approvalHistory = Array.isArray(res.data) ? res.data : [];
                 }
+            } catch (err) {
+                console.error("Tracking Error:", err);
+            } finally {
+                this.loading = false;
             }
-            return cfg[state] || cfg.waiting
+        },
+        formatDate(isoString) {
+            if (!isoString) return "";
+            const d = new Date(isoString);
+            return d.toLocaleString("th-TH", {
+                day: "2-digit", month: "2-digit", year: "numeric",
+                hour: "2-digit", minute: "2-digit"
+            });
+        },
+
+        // ✅ Helper เลือกสีจุดวงกลม (Dot) ตาม Status ID
+        // (Mapping ให้ตรงกับ Theme ของ Status Component)
+        getDotClass(statusId) {
+            switch (statusId) {
+                case 3: return 'dot-approved';  // 3=อนุมัติ (เขียว)
+                case 4: 
+                case 5: return 'dot-rejected';  // 4,5=ไม่อนุมัติ (แดง)
+                case 1: 
+                case 2: return 'dot-pending';   // 1,2=รออนุมัติ (ส้ม)
+                case 6: return 'dot-cancelled'; // 6=ยกเลิก (เทา)
+                default: return 'dot-wait';     // 0=รอดำเนินการ (เทาอ่อน)
+            }
         }
     }
 }
@@ -228,28 +250,10 @@ export default {
     font-size: 12px;
 }
 
-.dot-wait {
-    background: #F3F4F6;
-    color: #9CA3AF;
-}
-
-.dot-pending {
-    background: #FFE8C2;
-    color: #B45309;
-}
-
-.dot-approved {
-    background: #DCFCE7;
-    color: #166534;
-}
-
-.dot-rejected {
-    background: #FEE2E2;
-    color: #991B1B;
-}
-
-.dot-cancelled {
-    background: #E5E7EB;
-    color: #374151;
-}
+/* Map สี Dot */
+.dot-wait { background: #F3F4F6; color: #9CA3AF; }      /* ID 0 */
+.dot-pending { background: #FFE8C2; color: #B45309; }   /* ID 1, 2 */
+.dot-approved { background: #DCFCE7; color: #166534; }  /* ID 3 */
+.dot-rejected { background: #FEE2E2; color: #991B1B; }  /* ID 4, 5 */
+.dot-cancelled { background: #E5E7EB; color: #374151; } /* ID 6 */
 </style>

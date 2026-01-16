@@ -28,7 +28,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(item, index) in paginatedItems" :key="item.id">
+                    <tr v-for="(item) in paginatedItems" :key="item.id">
                         <td v-if="showSelect" class="text-center">
                             <v-checkbox v-model="localSelected" :value="item.id" hide-details class="mt-0 pt-0" />
                         </td>
