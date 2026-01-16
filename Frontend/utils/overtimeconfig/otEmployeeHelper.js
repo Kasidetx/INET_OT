@@ -8,7 +8,7 @@ export function getEmployeeTypeId(name = '') {
 export function getEmployeeTypeName(id) {
   const map = {
     1: 'พนักงานปกติ',
-    2: 'พนักงานเข้ากะ',
+    2: 'พนักงานเข้ากะปกติ',
     3: 'พนักงานเข้ากะ12ชม',
     4: 'พนักงานรายชั่วโมง'
   }

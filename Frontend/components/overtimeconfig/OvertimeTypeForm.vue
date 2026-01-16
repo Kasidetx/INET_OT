@@ -19,26 +19,26 @@
         <!-- ประเภทพนักงาน -->
         <v-col cols="12">
           <label class="field-label">ประเภทพนักงาน*</label>
-          <v-select v-model="form.employeeTypeName" :items="employeeTypes" outlined dense />
+          <v-select v-model="form.employeeTypeName" :items="employeeTypes" outlined dense @change="onUserChange" />
         </v-col>
 
         <!-- ประเภทวัน -->
         <v-col cols="12" md="6">
           <label class="field-label">ประเภทวัน*</label>
-          <v-select v-model="form.Worknametype" :items="dayTypes" outlined dense />
+          <v-select v-model="form.Worknametype" :items="dayTypes" outlined dense @change="onUserChange" />
         </v-col>
 
         <!-- ช่วงเวลา -->
         <v-col cols="12" md="6">
           <label class="field-label">ช่วงเวลาทำงาน*</label>
-          <v-select v-model="form.otPeriod" :items="periodTypes" outlined dense />
+          <v-select v-model="form.otPeriod" :items="periodTypes" outlined dense @change="onUserChange"/>
         </v-col>
 
 
         <!-- ชั่วโมง -->
         <v-col cols="12" md="6">
           <label class="field-label">ทำงานต่อเนื่อง (ชม.)</label>
-          <v-text-field v-model="form.min_continuousHours" outlined dense />
+          <v-text-field v-model="form.min_continuousHours" outlined dense @change="onUserChange"/>
         </v-col>
 
         <!-- break -->
@@ -143,15 +143,6 @@ export default {
   },
 
   watch: {
-
-    form: {
-      deep: true,
-      handler() {
-        this.applyRules()
-        this.applyAutoBreak()
-      }
-    },
-
     editData: {
       immediate: true,
       handler(val) {
@@ -194,121 +185,120 @@ export default {
     },
     /*  edit */
     mapEditData(val) {
+      // map ข้อมูลลง form
       this.form = {
         ...this.form,
         id: val.id,
         name: val.name,
-
-        employeeTypeName:
-          getEmployeeTypeName(val.employee_type_id),
-
-        Worknametype:
-          val.day_type === 'WORKDAY'
-            ? 'วันทำงาน'
-            : 'วันหยุด',
-
-        otPeriod:
-          val.ot_period === 'DURING_WORK'
-            ? 'ทำงานในเวลา'
-            : 'ทำงานนอกเวลา',
-
+        employeeTypeName: getEmployeeTypeName(val.employee_type_id),
+        Worknametype: val.day_type === 'WORKDAY' ? 'วันทำงาน' : 'วันหยุด',
+        otPeriod: val.ot_period === 'DURING_WORK' ? 'ทำงานในเวลา' : 'ทำงานนอกเวลา',
         min_continuousHours: val.min_continuous_hours,
         break_minutes: val.break_minutes,
         rate: val.rate,
         start_time: val.start_time
       }
+
+      // ✅ เรียก update แค่ text กฎ แต่ *ห้าม* คำนวณ rate/break ใหม่ทับข้อมูลเดิม
+      this.updateRulesDisplayOnly()
+    },
+
+    onUserChange() {
+      // 1. คำนวณ Break อัตโนมัติ
+      this.applyAutoBreak()
+      // 2. แนะนำ Rate อัตโนมัติ
+      this.form.rate = suggestRate(this.form)
+      // 3. อัปเดต text กฎ
+      this.updateRulesDisplayOnly()
     },
 
     /* Break */
+    updateRulesDisplayOnly() {
+      this.exampleRules = getExampleRules(this.form)
+    },
+
     applyAutoBreak() {
       const empTypeId = getEmployeeTypeId(this.form.employeeTypeName)
-
       const { breakMinutes } = calculateBreak({
         employeeType: empTypeId,
         workedHours: this.form.min_continuousHours,
         otPeriod: this.form.otPeriod
       })
-
       this.form.break_minutes = breakMinutes
-    },
-
-    applyRules() {
-      this.exampleRules = getExampleRules(this.form)
-      this.form.rate = suggestRate(this.form)
     },
 
 
     /* saveform */
-   async saveForm() {
-  if (
-    !this.form.employeeTypeName ||
-    !this.form.Worknametype ||
-    !this.form.otPeriod
-  ) {
-    this.$toast?.error('กรุณากรอกข้อมูลให้ครบ')
-    return
-  }
+    async saveForm() {
+      if (
+        !this.form.employeeTypeName ||
+        !this.form.Worknametype ||
+        !this.form.otPeriod
+      ) {
+        this.$toast?.error('กรุณากรอกข้อมูลให้ครบ')
+        return
+      }
 
-  const empTypeId = getEmployeeTypeId(this.form.employeeTypeName)
+      const empTypeId = getEmployeeTypeId(this.form.employeeTypeName)
 
-  // ===== คำนวณ start_time ตามเงื่อนไขใหม่ =====
-  let startTime = null
+      // ===== คำนวณ start_time ตามเงื่อนไขใหม่ =====
+      let startTime = null
 
-  if (empTypeId === 1) {
-    // พนักงานปกติ
-    startTime =
-      this.mapOtPeriod(this.form.otPeriod) === 'DURING_WORK'
-        ? '08:30:00'
-        : '17:30:00'
-  }
+      if (empTypeId === 1) {
+        // พนักงานปกติ
+        startTime =
+          this.mapOtPeriod(this.form.otPeriod) === 'DURING_WORK'
+            ? '08:30:00'
+            : '17:30:00'
+      }
 
-  const payload = {
-    name: this.form.name,
-    employee_type_id: empTypeId,
+      const payload = {
+        name: this.form.name,
+        employee_type_id: empTypeId,
 
-    day_type:
-      this.form.Worknametype === 'วันทำงาน'
-        ? 'WORKDAY'
-        : 'HOLIDAY',
+        day_type:
+          this.form.Worknametype === 'วันทำงาน'
+            ? 'WORKDAY'
+            : 'HOLIDAY',
 
-    ot_period: this.mapOtPeriod(this.form.otPeriod),
+        ot_period: this.mapOtPeriod(this.form.otPeriod),
 
-    // ทุก type ยังใช้ map เดิม
-    start_condition: this.mapStartCondition(empTypeId),
+        // ทุก type ยังใช้ map เดิม
+        start_condition: this.mapStartCondition(empTypeId),
 
-    // ✅ ตรง requirement ใหม่
-    start_time: startTime,
+        // ✅ ตรง requirement ใหม่
+        start_time: startTime,
 
-    rate: this.form.rate,
+        rate: this.form.rate,
 
-    min_continuous_hours: this.form.min_continuousHours,
+        min_continuous_hours: this.form.min_continuousHours,
 
-    break_minutes: this.form.break_minutes,
+        break_minutes: this.form.break_minutes,
 
-    require_break:
-      this.form.break_minutes > 0 ? 1 : 0,
+        require_break:
+          this.form.break_minutes > 0 ? 1 : 0,
 
-    description:
-      `${this.form.employeeTypeName} - ${this.form.Worknametype} - ${this.form.otPeriod}`,
+        description:
+          `${this.form.employeeTypeName} - ${this.form.Worknametype} - ${this.form.otPeriod}`,
 
-    is_active: 1
-  }
+        is_active: 1
+      }
 
-  try {
-    if (this.form.id) {
-      await api.put(`/api/otconfig/${this.form.id}`, payload)
-    } else {
-      await api.post('/api/otconfig', payload)
-    }
+      try {
+        if (this.form.id) {
+          await api.put(`/api/otconfig/${this.form.id}`, payload)
+        } else {
+          await api.post('/api/otconfig', payload)
+        }
 
-    this.$toast?.success('บันทึกข้อมูลเรียบร้อย')
-    this.$emit('saved')
-    this.$emit('close')
+        this.$toast?.success('บันทึกข้อมูลเรียบร้อย')
+        this.$emit('saved')
+        this.$emit('close')
 
-  } catch (e) {
-    console.log('SAVE ERROR =', e.response?.data)
-  }
-},
+      } catch (e) {
+        console.log('SAVE ERROR =', e.response?.data)
+      }
+    },
 
 
     async deleteItem() {
