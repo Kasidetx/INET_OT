@@ -31,14 +31,14 @@
         <!-- ช่วงเวลา -->
         <v-col cols="12" md="6">
           <label class="field-label">ช่วงเวลาทำงาน*</label>
-          <v-select v-model="form.otPeriod" :items="periodTypes" outlined dense @change="onUserChange"/>
+          <v-select v-model="form.otPeriod" :items="periodTypes" outlined dense @change="onUserChange" />
         </v-col>
 
 
         <!-- ชั่วโมง -->
         <v-col cols="12" md="6">
           <label class="field-label">ทำงานต่อเนื่อง (ชม.)</label>
-          <v-text-field v-model="form.min_continuousHours" outlined dense @change="onUserChange"/>
+          <v-text-field v-model="form.min_continuousHours" outlined dense @change="onUserChange" />
         </v-col>
 
         <!-- break -->
@@ -124,7 +124,11 @@ export default {
 
       dayTypes: ['วันทำงาน', 'วันหยุด'],
 
-      periodTypes: ['ทำงานในเวลา', 'ทำงานนอกเวลา'],
+      periodTypes: [
+        'ในเวลางาน',
+        'ก่อนเวลางาน (เช้า)',  // <--- เพิ่ม
+        'หลังเลิกงาน (เย็น)'   // <--- เพิ่ม
+      ],
 
       /*  ---- form ---- */
       form: {
@@ -180,19 +184,23 @@ export default {
     },
 
     mapOtPeriod(period) {
-      if (period.includes('นอก')) return 'OUTSIDE_WORK'
-      return 'DURING_WORK'
+      if (period.includes('ก่อน')) return 'BEFORE_WORK'; // <--- Map ให้ตรง DB
+      if (period.includes('หลัง')) return 'AFTER_WORK';  // <--- Map ให้ตรง DB
+      return 'DURING_WORK';
     },
     /*  edit */
     mapEditData(val) {
       // map ข้อมูลลง form
+      let periodLabel = 'ในเวลางาน';
+      if (val.ot_period === 'BEFORE_WORK') periodLabel = 'ก่อนเวลางาน (เช้า)';
+      else if (val.ot_period === 'AFTER_WORK') periodLabel = 'หลังเลิกงาน (เย็น)';
       this.form = {
         ...this.form,
         id: val.id,
         name: val.name,
         employeeTypeName: getEmployeeTypeName(val.employee_type_id),
         Worknametype: val.day_type === 'WORKDAY' ? 'วันทำงาน' : 'วันหยุด',
-        otPeriod: val.ot_period === 'DURING_WORK' ? 'ทำงานในเวลา' : 'ทำงานนอกเวลา',
+        otPeriod: periodLabel,
         min_continuousHours: val.min_continuous_hours,
         break_minutes: val.break_minutes,
         rate: val.rate,
@@ -246,10 +254,14 @@ export default {
 
       if (empTypeId === 1) {
         // พนักงานปกติ
-        startTime =
-          this.mapOtPeriod(this.form.otPeriod) === 'DURING_WORK'
-            ? '08:30:00'
-            : '17:30:00'
+        const periodEnum = this.mapOtPeriod(this.form.otPeriod);
+
+        if (periodEnum === 'DURING_WORK') {
+          startTime = '08:30:00';
+        } else {
+          // ถ้าเป็น BEFORE หรือ AFTER ให้เป็น NULL (ตาม SQL ใหม่)
+          startTime = null;
+        }
       }
 
       const payload = {

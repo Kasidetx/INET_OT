@@ -154,41 +154,42 @@ export default {
 
     formatPeriod(period) {
       const periods = {
-        'DURING_WORK': 'ในเวลางาน',
-        'OUTSIDE_WORK': 'นอกเวลางาน',
+        'DURING_WORK': 'ในเวลาทำงาน',
+        'BEFORE_WORK': 'OT ก่อนเข้างาน (เช้า)', // <--- เพิ่ม
+        'AFTER_WORK': 'OT หลังเลิกงาน (เย็น)',  // <--- เพิ่ม
       }
       return periods[period] || period
     },
 
 
-   getDisplayTime(item) {
+    getDisplayTime(item) {
 
-  // ===== 1. พนักงานปกติ =====
-  if (item.employee_type_id === 1) {
-    if (item.start_time) {
-      return item.start_time.substring(0, 5) + " น."
-    }
+      // ===== 1. พนักงานปกติ =====
+      if (item.employee_type_id === 1) {
+        if (item.start_time) {
+          return item.start_time.substring(0, 5) + " น."
+        }
 
-    // กันกรณีไม่มีเวลา
-    return item.ot_period === "DURING_WORK"
-      ? "เริ่ม 08:30"
-      : "เริ่ม 17:30"
-  }
+        // กันกรณีไม่มีเวลา
+        return item.ot_period === "DURING_WORK"
+          ? "เริ่ม 08:30"
+          : "เริ่ม 17:30"
+      }
 
-  // ===== 2. พนักงานกะ =====
-  if (item.employee_type_id === 2 || item.employee_type_id === 3) {
-    return item.ot_period === "DURING_WORK"
-      ? "ตามตารางกะ"
-      : "ตามตารางกะ"
-  }
+      // ===== 2. พนักงานกะ =====
+      if (item.employee_type_id === 2 || item.employee_type_id === 3) {
+        return item.ot_period === "DURING_WORK"
+          ? "ตามตารางกะ"
+          : "ตามตารางกะ"
+      }
 
-  // ===== 3. รายชั่วโมง =====
-  if (item.employee_type_id === 4) {
-    return "ไม่มีเวลาเข้างาน"
-  }
+      // ===== 3. รายชั่วโมง =====
+      if (item.employee_type_id === 4) {
+        return "ไม่มีเวลาเข้างาน"
+      }
 
-  return "-"
-},
+      return "-"
+    },
 
 
 
