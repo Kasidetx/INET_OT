@@ -4,15 +4,16 @@ const approvalModel = {
   // ดึง approval ทั้ง flow ของ request
   async findByRequestId(requestId) {
     const sql = `
-    SELECT 
-      a.*,
-      e.name AS approve_name
-    FROM approval a
-    LEFT JOIN employee e
-      ON e.emp_id = a.approve_emp
-    WHERE a.request_id = ?
-    ORDER BY a.level ASC
-  `;
+  SELECT
+    a.id, a.request_id, a.level, a.approval_status, a.reason, a.org_chart, a.approve_emp,
+    a.level_position, a.action_at, a.action_by, a.created_at,
+    e.name AS approve_name
+  FROM approval a
+  LEFT JOIN employee e ON e.emp_id = a.approve_emp
+  WHERE a.request_id = ?
+  ORDER BY a.level ASC
+`;
+
     const [rows] = await db.query(sql, [requestId]);
     return rows;
   },
@@ -20,13 +21,15 @@ const approvalModel = {
   // หา level ที่ถึงคิวอนุมัติ
   async findCurrentLevel(requestId) {
     const sql = `
-      SELECT *
-      FROM approval
-      WHERE request_id = ?
-        AND approval_status = 'PENDING'
-      ORDER BY level ASC
-      LIMIT 1
-    `;
+    SELECT
+      id, request_id, level, approval_status, reason, org_chart, approve_emp,
+      level_position, action_at, action_by, created_at
+    FROM approval
+    WHERE request_id = ?
+      AND approval_status = 'PENDING'
+    ORDER BY level ASC
+    LIMIT 1
+  `;
     const [rows] = await db.query(sql, [requestId]);
     return rows[0] || null;
   },

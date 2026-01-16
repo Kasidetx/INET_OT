@@ -3,13 +3,21 @@ import dayjs from "dayjs";
 
 const HolidayModel = {
   async findAll() {
-    const sql = "SELECT * FROM holiday ORDER BY day_date ASC";
+    const sql = `
+    SELECT id, year, description, day_date, created_at
+    FROM holiday
+    ORDER BY day_date ASC
+  `;
     const [rows] = await db.query(sql);
     return rows;
   },
 
   async findByYear(year) {
-    const sql = "SELECT * FROM holiday WHERE year = ?";
+    const sql = `
+    SELECT id, year, description, day_date, created_at
+    FROM holiday
+    WHERE year = ?
+  `;
     const [rows] = await db.query(sql, [year]);
     return rows;
   },

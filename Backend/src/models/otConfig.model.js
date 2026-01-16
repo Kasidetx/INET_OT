@@ -7,14 +7,28 @@ import db from "../config/db.js";
 
 const OtConfigModel = {
   async findAll() {
-    // ดึงทุก column ตามภาพ Schema ใหม่
-    const sql = "SELECT * FROM ot_config ORDER BY id ASC";
+    const sql = `
+    SELECT
+      id, name, employee_type_id, day_type, ot_period, rate,
+      start_condition, start_time, min_continuous_hours,
+      require_break, break_minutes, description, is_active, created_at
+    FROM ot_config
+    ORDER BY id ASC
+  `;
     const [rows] = await db.query(sql);
     return rows;
   },
 
   async findById(id) {
-    const [rows] = await db.query("SELECT * FROM ot_config WHERE id = ?", [id]);
+    const sql = `
+    SELECT
+      id, name, employee_type_id, day_type, ot_period, rate,
+      start_condition, start_time, min_continuous_hours,
+      require_break, break_minutes, description, is_active, created_at
+    FROM ot_config
+    WHERE id = ?
+  `;
+    const [rows] = await db.query(sql, [id]);
     return rows[0] || null;
   },
 

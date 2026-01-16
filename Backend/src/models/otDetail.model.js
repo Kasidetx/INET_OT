@@ -2,13 +2,22 @@ import db from "../config/db.js";
 
 const OtDetailModel = {
   async findAll() {
-    const [rows] = await db.query("SELECT * FROM ot_detail ORDER BY id ASC");
+    const [rows] = await db.query(`
+    SELECT id, ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate, created_at
+    FROM ot_detail
+    ORDER BY id ASC
+  `);
     return rows;
   },
 
   async findByOtId(otId, conn = null) {
-    const sql = "SELECT * FROM ot_detail WHERE ot_id = ? ORDER BY id ASC";
-    const executor = conn || db; // ใช้ conn ถ้ามี
+    const sql = `
+    SELECT id, ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate, created_at
+    FROM ot_detail
+    WHERE ot_id = ?
+    ORDER BY id ASC
+  `;
+    const executor = conn || db;
     const [rows] = await executor.query(sql, [otId]);
     return rows;
   },
