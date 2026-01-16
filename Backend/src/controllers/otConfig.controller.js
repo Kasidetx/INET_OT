@@ -3,6 +3,27 @@ import OtService from "../services/ot.service.js";
 import { sendResponse } from "../utils/response.js";
 import { catchAsync } from "../utils/catchAsync.js";
 
+const prepareConfigData = (body) => {
+  const isWorkDay = body.day_type === "WORKDAY";
+
+  return {
+    name: body.name,
+    employee_type_id: body.employee_type_id,
+    day_type: body.day_type,
+    ot_period: body.ot_period,
+    start_condition: body.start_condition,
+    start_time: body.start_time,
+    description: body.description,
+
+    // Default Values Logic
+    rate: body.rate ?? 1.0,
+    break_minutes: body.break_minutes ?? 0,
+    min_continuous_hours: body.min_continuous_hours ?? (isWorkDay ? 2.0 : 4.0),
+    require_break: body.break_minutes > 0 ? 1 : 0,
+    is_active: body.is_active ?? 1,
+  };
+};
+
 export const getAllOtConfigs = catchAsync(async (req, res) => {
   const otConfigs = await OtConfigModel.findAll();
   sendResponse(res, 200, otConfigs, "ดึงข้อมูลการตั้งค่า OT ทั้งหมดสำเร็จ");
@@ -19,57 +40,24 @@ export const getOtConfigById = catchAsync(async (req, res) => {
   sendResponse(res, 200, otConfig, "ค้นหาการตั้งค่า OT สำเร็จ");
 });
 
-
 // ================= CREATE =================
 
 export const createOtConfig = catchAsync(async (req, res) => {
-  const {
-    name,
-    employee_type_id,
-    day_type,
-    ot_period,
-    rate,
-    start_time,
-    start_condition,
-    description,
-    break_minutes,
-    min_continuous_hours
-  } = req.body;
+  const { name, employee_type_id, day_type, ot_period } = req.body;
 
+  // 1. Validation แบบ Guard Clause (อ่านง่ายกว่า)
   if (!name || !employee_type_id || !day_type || !ot_period) {
     throw {
       statusCode: 400,
-      message: 'กรุณาส่งข้อมูลให้ครบถ้วน'
+      message: "กรุณาส่งข้อมูลให้ครบถ้วน (name, type, day, period)",
     };
   }
 
-  const newOtConfig = await OtConfigModel.create({
-    name,
-    employee_type_id,
-    day_type,
-    ot_period,
+  // 2. Prepare Data
+  const configData = prepareConfigData(req.body);
 
-    // ✅ รับตรงจาก frontend
-
-    start_time,
-
-    start_condition: start_condition,
-
-    rate: rate || 1.0,
-
-    description,
-
-    break_minutes: break_minutes || 0,
-
-    min_continuous_hours:
-      min_continuous_hours ||
-      (day_type === 'WORKDAY' ? 2.0 : 4.0),
-
-    require_break: break_minutes > 0 ? 1 : 0,
-
-    is_active: 1
-  });
-
+  // 3. Save
+  const newOtConfig = await OtConfigModel.create(configData);
   sendResponse(res, 201, newOtConfig, "สร้างการตั้งค่า OT สำเร็จ");
 });
 
@@ -78,41 +66,17 @@ export const createOtConfig = catchAsync(async (req, res) => {
 export const updateOtConfig = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const {
-    name,
-    employee_type_id,
-    day_type,
-    ot_period,
-    rate,
-    start_condition,
-    start_time,
-    description,
-    break_minutes,
-    min_continuous_hours,
-    is_active
-  } = req.body;
+  // 1. Prepare Data
+  const configData = prepareConfigData(req.body);
 
-  // อัปเดต Config ตามปกติ
-  await OtConfigModel.update(id, {
-    name,
-    employee_type_id,
-    day_type,
-    ot_period,
-    rate,
-    start_condition,
-    start_time,
-    description,
-    break_minutes,
-    min_continuous_hours,
-    require_break: break_minutes > 0 ? 1 : 0,
-    is_active: is_active !== undefined ? is_active : 1
-  });
+  // 2. Update
+  await OtConfigModel.update(id, configData);
 
+  // 3. Trigger Calculation
   await OtService.recalculateAllPending();
 
-  sendResponse(res, 200, null, "อัปเดต OT Config และคำนวณยอดเงินรายการคงค้างใหม่เรียบร้อยแล้ว");
+  sendResponse(res, 200, null, "อัปเดตและคำนวณยอดเงินใหม่เรียบร้อยแล้ว");
 });
-
 
 // ================= DELETE =================
 

@@ -34,27 +34,27 @@ const OtConfigModel = {
 
   async create(data) {
     const sql = `
-        INSERT INTO ot_config (
-            name, employee_type_id, day_type, ot_period, rate, 
-            start_condition, start_time,
-            min_continuous_hours, require_break, break_minutes, 
-            description, is_active
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO ot_config (
+        name, employee_type_id, day_type, ot_period, rate, 
+        start_condition, start_time, min_continuous_hours, 
+        require_break, break_minutes, description, is_active
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
+
     const values = [
       data.name,
       data.employee_type_id,
       data.day_type,
       data.ot_period,
-      data.rate || 1.0,
+      data.rate,
       data.start_condition,
       data.start_time,
-      data.min_continuous_hours || 0.0,
-      data.require_break || 0,
-      data.break_minutes || 0,
+      data.min_continuous_hours,
+      data.require_break,
+      data.break_minutes,
       data.description,
-      data.is_active !== undefined ? data.is_active : 1,
+      data.is_active,
     ];
 
     const [result] = await db.query(sql, values);
@@ -63,14 +63,23 @@ const OtConfigModel = {
 
   async update(id, data) {
     const sql = `
-        UPDATE ot_config
-        SET 
-            name = ?, employee_type_id = ?, day_type = ?, ot_period = ?, rate = ?,
-            start_condition = ?, start_time = ?,
-            min_continuous_hours = ?, require_break = ?, break_minutes = ?, 
-            description = ?, is_active = ?
-        WHERE id = ?
+      UPDATE ot_config
+      SET 
+        name = ?, 
+        employee_type_id = ?, 
+        day_type = ?, 
+        ot_period = ?, 
+        rate = ?,
+        start_condition = ?, 
+        start_time = ?,
+        min_continuous_hours = ?, 
+        require_break = ?, 
+        break_minutes = ?, 
+        description = ?, 
+        is_active = ?
+      WHERE id = ?
     `;
+
     const values = [
       data.name,
       data.employee_type_id,
