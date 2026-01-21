@@ -1,145 +1,138 @@
 <template>
-  <v-container class="pa-0" style="background-color:#ffffff; min-height:100vh; border-radius:16px;">
-    <div style="padding:32px; background-color:#ffffff; border-radius:16px;">
-      <v-row class="mb-4 align-center" no-gutters>
-        <!-- ปี -->
-        <v-col cols="auto" class="d-flex align-center">
-          <span style="font-size:14px; color:#333333; margin-right:8px;">
-            ปี :
-          </span>
-          <v-select v-model="selectedYear" :items="yearList" dense outlined hide-details style="min-width:120px;" />
-        </v-col>
+  <v-container class="pa-4 custom-bg" fluid>
+    <v-row class="mb-4 align-center" dense>
+      <v-col cols="12" sm="auto" class="d-flex align-center mb-3 mb-sm-0">
+        <span class="label-text mr-3">ปี :</span>
+        <v-select v-model="selectedYear" :items="yearList" outlined hide-details class="white rounded-lg big-input"
+          style="min-width: 140px;" />
+      </v-col>
 
-        <!-- เดือน -->
-        <v-col cols="auto" class="d-flex align-center ml-3">
-          <span style="font-size:14px; color:#333333; margin-right:8px;">
-            เดือน :
-          </span>
-          <v-select v-model="selectedMonth" :items="monthList" dense outlined hide-details style="min-width:160px;" />
-        </v-col>
+      <v-col cols="12" sm="auto" class="d-flex align-center mb-3 mb-sm-0 ml-sm-4">
+        <span class="label-text mr-3">เดือน :</span>
+        <v-select v-model="selectedMonth" :items="monthList" outlined hide-details class="white rounded-lg big-input"
+          style="min-width: 180px;" />
+      </v-col>
 
-        <!-- ปุ่มค้นหา -->
-        <v-col cols="auto" class="d-flex align-center ml-3">
-          <v-btn color="primary" outlined @click="onSearch"
-            style="height:36px; padding:0 18px; font-size:14px; text-transform:none;">
-            ค้นหา
-          </v-btn>
-        </v-col>
+      <v-col cols="12" sm="auto" class="ml-sm-4 mb-3 mb-sm-0">
+        <v-btn color="primary" outlined block class="rounded-lg big-btn" height="50" @click="onSearch">
+          <span class="text-h6 font-weight-bold">ค้นหา</span>
+        </v-btn>
+      </v-col>
 
-        <v-spacer />
+      <v-spacer class="d-none d-sm-block" />
 
+      <v-col cols="12" sm="auto" v-if="!$vuetify.breakpoint.xsOnly">
+        <v-btn block :disabled="!hasSelectedEntries" :color="hasSelectedEntries ? '#0863B6' : '#E0E0E0'"
+          class="white--text rounded-lg big-btn" height="40" @click="dialogConfirm = true">
+          <span class="text-h6">ส่งคำขอ</span>
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <div class="mb-6">
+      <h2 class="primary--text text-h5 font-weight-bold mb-4">
+        รายการเวลาเข้างาน {{ timeEntries.length }} รายการ
+      </h2>
+
+      <v-row no-gutters align="center" class="mb-2">
         <v-col cols="auto">
-          <v-btn min-width="100px" :disabled="!hasSelectedEntries" :color="hasSelectedEntries ? '#0863B6' : '#C4C4C4'"
-            class="white--text" style="text-transform:none;" @click="dialogConfirm = true">
-            ส่งคำขอ
-          </v-btn>
-        </v-col>
-      </v-row>
-
-      <v-spacer />
-
-      <!-- Heading -->
-      <div style="margin-bottom:24px;">
-        <p style="font-size:24px; font-weight:700; color:#158eff; margin:0;">
-          รายการเวลาเข้างาน {{ timeEntries.length }} รายการ
-        </p>
-      </div>
-
-      <v-row class="mb-4" no-gutters>
-        <v-col cols="auto">
-          <v-checkbox v-model="selectAll" hide-details big-checkbox class="select-all-checkbox"
-            @change="toggleSelectAll">
+          <v-checkbox v-model="selectAll" hide-details class="mt-0 pt-0 custom-checkbox" @change="toggleSelectAll">
             <template #label>
-              <span style="font-size:18px; font-weight:500; color:#333333; line-height:1;">
-                เลือกทั้งหมด
-              </span>
+              <span class="black--text font-weight-bold" style="font-size: 18px;">เลือกทั้งหมด</span>
             </template>
           </v-checkbox>
         </v-col>
 
-        <v-spacer></v-spacer>
+        <v-spacer />
 
-        <v-btn color="success" outlined class="mr-2" @click="simulateSwipeCard" style="
-      height:46px;
-      padding:0 24px;
-      text-transform:none;
-      font-size:15px;
-    ">
-          <v-icon left>mdi-card-account-details-outline</v-icon>
-          จำลองรูดบัตร
-        </v-btn>
+        <v-col cols="12" sm="auto" class="d-flex gap-3 mt-3 mt-sm-0 justify-end flex-wrap">
+          <v-btn color="success" outlined class="rounded-lg px-6" height="50" @click="simulateSwipeCard">
+            <v-icon left>mdi-card-account-details-outline</v-icon>
+            <span class="text-subtitle-1 font-weight-bold">จำลองรูดบัตร</span>
+          </v-btn>
 
-        <v-col cols="auto">
-          <v-btn outlined color="primary" @click="addOvertimeRequest" style="
-              height:46px;
-              padding:0 24px;
-              text-transform:none;
-              border-color:#6aa1d3;
-              color:#6aa1d3;
-              font-size:15px;
-            ">
-            เพิ่มคำขอล่วงเวลา
+          <v-btn color="#0863B6" outlined class="rounded-lg px-6 ml-2" height="50" @click="addOvertimeRequest">
+            <span class="text-subtitle-1 font-weight-bold">เพิ่มคำขอล่วงเวลา</span>
           </v-btn>
         </v-col>
       </v-row>
 
-      <div class="entries-container">
-        <div v-for="(entry, index) in timeEntries" :key="index" class="time-entry-card">
-          <div class="entry-row">
-            <div class="entry-checkbox">
-              <v-checkbox v-model="entry.selected" hide-details big-checkbox @change="updateSelectAll"></v-checkbox>
+      <v-row v-if="$vuetify.breakpoint.xsOnly" class="mb-4 mt-2">
+        <v-col cols="12">
+          <v-btn block :disabled="!hasSelectedEntries" :color="hasSelectedEntries ? '#0863B6' : '#E0E0E0'"
+            class="white--text rounded-lg big-btn" height="56" @click="dialogConfirm = true">
+            <span class="text-h6">ส่งคำขอ</span>
+          </v-btn>
+        </v-col>
+      </v-row>
+    </div>
+
+    <div class="entries-list">
+      <div v-for="(entry, index) in timeEntries" :key="index" :class="[
+        'entry-card',
+        $vuetify.breakpoint.xsOnly ? 'mobile-card' : 'desktop-card'
+      ]">
+        <div class="d-flex flex-nowrap align-start">
+
+          <div class="mr-4 pt-1">
+            <v-checkbox v-model="entry.selected" hide-details class="mt-0 pt-0 custom-checkbox big-checkbox"
+              @change="updateSelectAll" />
+          </div>
+
+          <div class="flex-grow-1" style="min-width: 0;">
+
+            <div class="d-flex flex-wrap align-center justify-space-between mb-3">
+              <div class="d-flex flex-wrap align-center">
+
+                <div class="d-flex align-center mr-8 item-group">
+                  <span class="label-text mr-4">วันที่ :</span>
+                  <span class="value-text font-weight-bold">{{ $formatDate(entry.date) }}</span>
+                </div>
+
+                <div class="d-flex align-center item-group">
+                  <span class="label-text mr-4">สถานะ :</span>
+                  <div style="transform: scale(1.1); transform-origin: left;">
+                    <Status :value="entry.status" />
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="edit-btn-container" @click="editOvertimeRequest(entry)" v-ripple>
+                <v-icon color="#0863B6" size="22" class="mr-1">mdi-pencil</v-icon>
+                <span class="edit-text">แก้ไขคำขอล่วงเวลา</span>
+              </div>
             </div>
 
-            <div class="card-main">
-              <div class="top-row">
-                <div class="date-block">
-                  <span class="small-label">วันที่</span>
-                  <span class="colon">:</span>
-                  <span class="date-value">{{ $formatDate(entry.date) }}</span>
-                </div>
-
-                <div class="status-block">
-                  <span class="small-label">สถานะ</span>
-                  <span class="colon">:</span>
-
-                  <Status :value="entry.status" />
-                </div>
+            <div class="d-flex flex-wrap align-center">
+              <div class="d-flex align-center mr-10 item-group" style="min-width: 280px;">
+                <span class="label-text mr-4">เข้างาน :</span>
+                <span class="value-text">
+                  {{ $formatDate(entry.date) }}
+                  <span class="time-highlight ml-2">{{ $formatTime(entry.checkIn) }}</span>
+                </span>
               </div>
 
-              <div class="bottom-row">
-                <div class="in-block">
-                  <span class="small-label">เข้างาน</span>
-                  <span class="colon">:</span>
-                  <span class="detail-value">{{ $formatDateTime(entry.checkIn) }}</span>
-                </div>
+              <div class="d-flex align-center item-group" style="min-width: 280px;">
+                <span class="label-text mr-4">ออกงาน :</span>
+                <span class="value-text">
+                  {{ $formatDate(entry.checkOut || entry.date) }}
+                  <span class="time-highlight ml-2">{{ $formatTime(entry.checkOut) }}</span>
+                </span>
+              </div>
 
-                <div class="out-block">
-                  <span class="small-label">ออกงาน</span>
-                  <span class="colon">:</span>
-                  <span class="detail-value">{{ $formatDateTime(entry.checkOut) }}</span>
-                </div>
-              </div>
-              <div v-if="entry.selected">
-                <span class="small-label">รายละเอียด</span>
-                <span class="colon">:</span>
-                <v-textarea v-model="entry.description" outlined rows="2" counter="300" maxlength="300"
-                  placeholder="กรอกรายละเอียด" hide-details="auto" />
-              </div>
             </div>
 
-            <div class="entry-edit">
-              <div class="edit-button-wrapper" @click="editOvertimeRequest(entry)">
-                <v-btn class="btn-edit-icon">
-                  <v-icon class="pencil-icon">mdi-pencil</v-icon>
-                </v-btn>
-              </div>
-              <span class="edit-text">แก้ไขคำขอล่วงเวลา</span>
+            <div v-if="entry.selected" class="mt-4">
+              <v-textarea v-model="entry.description" outlined rows="2" placeholder="ระบุรายละเอียดเพิ่มเติม"
+                hide-details class="rounded-lg text-body-1" />
             </div>
+
           </div>
         </div>
-
       </div>
     </div>
+
     <DialogOvertimeConfirm v-model="dialogConfirm" @confirm="submitRequest" />
     <DialogOvertimeForm v-model="dialogOvertimeForm" :mode="overtimeMode" :item="selectedEntry" :emp-id="mockEmpId"
       @submit="handleSubmitOvertime" />
@@ -149,7 +142,7 @@
 <script>
 import DialogOvertimeForm from "@/components/timeattendance/DialogOvertimeForm.vue";
 import DialogOvertimeConfirm from "@/components/timeattendance/DialogOvertimeConfirm.vue";
-import Status from "@/components/global/Status.vue"; // ตรวจสอบ path ให้ถูกต้อง
+import Status from "@/components/global/Status.vue";
 import api from "../../service/api";
 
 export default {
@@ -161,22 +154,12 @@ export default {
   },
   data() {
     const THAI_MONTHS = [
-      "มกราคม",
-      "กุมภาพันธ์",
-      "มีนาคม",
-      "เมษายน",
-      "พฤษภาคม",
-      "มิถุนายน",
-      "กรกฎาคม",
-      "สิงหาคม",
-      "กันยายน",
-      "ตุลาคม",
-      "พฤศจิกายน",
-      "ธันวาคม",
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
     ];
-
     const now = new Date();
     const buddhistYear = now.getFullYear() + 543;
+
     return {
       selectedYear: String(buddhistYear),
       selectedMonth: THAI_MONTHS[now.getMonth()],
@@ -184,14 +167,12 @@ export default {
       monthList: THAI_MONTHS,
 
       selectAll: false,
-
       allTimeEntries: [],
       timeEntries: [],
       dialogOvertimeForm: false,
       selectedEntry: null,
       overtimeMode: "",
       dialogConfirm: false,
-
       mockEmpId: '61306',
     };
   },
@@ -204,53 +185,39 @@ export default {
     },
   },
   methods: {
-
     async fetchTimeEntries() {
       this.loading = true;
       try {
-        // 1. ยิง API /api/ot แบบ Production
         const response = await api.get("/api/ot", {
-          params: {
-            // ส่งค่า Mock ID ไป (ถ้า user ไม่กรอกจะเป็น null/empty ก็ไม่เป็นไร)
-            emp_id: this.mockEmpId
-          }
+          params: { emp_id: this.mockEmpId }
         });
-
         if (response.data && response.data.status === 'success') {
           const employees = response.data.result;
           const flattenedEntries = [];
 
-          // 2. วนลูป 2 ชั้นเพื่อแตกข้อมูล (Employee -> Request -> Row)
           employees.forEach(emp => {
-            // เช็คว่าพนักงานคนนี้มีรายการ OT ไหม
             if (Array.isArray(emp.requests) && emp.requests.length > 0) {
-
               emp.requests.forEach(req => {
-                // 2. เปลี่ยน req.sts -> req.status
                 const status = Number(req.status);
+                // ดึงเฉพาะสถานะ 0 (Draft) หรือตามต้องการ
                 if (status === 0) {
                   flattenedEntries.push({
-                    // --- ส่วนข้อมูลหลักที่ใช้แสดงผล ---
-                    date: req.created_at,     // วันที่ (เช่น 24/12/2568)
-                    checkIn: req.start_time,  // เวลาเข้า (เช่น 08:30 น.)
-                    checkOut: req.end_time,   // เวลาออก (เช่น 17:30 น.)
-                    status: req.status,    // สถานะ (เช่น รออนุมัติ)
-                    description: req.description || "-",        // รายละเอียด
-
-                    // --- ส่วนที่ต้องใช้สำหรับ Logic (Checkbox, Edit, Status) ---
-                    id: req.ot_id,                 // ID ของรายการ OT
+                    date: req.created_at,
+                    checkIn: req.start_time,
+                    checkOut: req.end_time,
+                    status: req.status,
+                    description: req.description || "",
+                    id: req.ot_id,
                     request_id: req.request_id,
                     emp_id: this.mockEmpId,
-                    selected: false,      // จำเป็นสำหรับ Checkbox เลือกรายการ
-
+                    selected: false,
                   });
                 }
               });
             }
           });
-
-          // 3. อัปเดตเข้าตัวแปรตาราง
-          this.timeEntries = flattenedEntries;
+          this.allTimeEntries = flattenedEntries; // เก็บข้อมูลดิบทั้งหมด
+          this.onSearch(); // กรองข้อมูลตามปีเดือนเริ่มต้น
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -259,16 +226,16 @@ export default {
       }
     },
 
-    // ปรับปรุง onSearch ให้ค้นหาจากข้อมูลที่ map มาแล้ว
     onSearch() {
       if (this.selectedYear && this.selectedMonth) {
-        const targetYear = parseInt(this.selectedYear); // พ.ศ.
+        const targetYear = parseInt(this.selectedYear) - 543; // แปลงกลับเป็น ค.ศ.
         this.timeEntries = this.allTimeEntries.filter((entry) => {
-          const d = new Date(entry._raw.start_time);
-          const entryYear = d.getFullYear() + 543;
-          const entryMonth = this.monthList[d.getMonth()];
+          const d = new Date(entry.checkIn || entry.date); // ใช้ checkIn เป็นหลัก ถ้าไม่มีใช้ date
+          const entryYear = d.getFullYear();
+          // getMonth() คืนค่า 0-11, monthList index ตรงกันพอดี
+          const entryMonthName = this.monthList[d.getMonth()];
 
-          return entryYear === targetYear && entryMonth === this.selectedMonth;
+          return entryYear === targetYear && entryMonthName === this.selectedMonth;
         });
       }
     },
@@ -276,29 +243,20 @@ export default {
     async simulateSwipeCard() {
       try {
         const now = new Date();
-        const endTime = new Date(now.getTime() + 9 * 60 * 60 * 1000); // สมมติว่าเลิกงานอีก 9 ชม.
-
+        const endTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
         const payload = {
           emp_id: this.mockEmpId,
           created_by: this.mockEmpId,
           start_time: this.formatToMySQL(now),
           end_time: this.formatToMySQL(endTime),
-          description: "ลงเวลาเข้างาน (จำลองการรูดบัตร)",
-          type: 1, // ประเภทงานปกติ (สมมติ ID=1)
-
-          // 🔥 สำคัญ: ส่งสถานะ 0 เพื่อให้เป็น Draft
+          description: "ลงเวลาเข้างาน (จำลอง)",
+          type: 1,
           sts: 0
         };
-
-        // ยิง API สร้างรายการ
         const response = await api.post('/api/ot', payload);
-
         if (response.data && response.data.status === 'success') {
-          // โหลดข้อมูลใหม่ (รายการนี้จะโชว์ขึ้นมาเพราะสถานะเป็น 0)
           this.fetchTimeEntries();
-          // alert("รูดบัตรสำเร็จ (Draft)");
         }
-
       } catch (err) {
         console.error("Simulation Error:", err);
         alert("เกิดข้อผิดพลาดในการจำลองรูดบัตร");
@@ -316,26 +274,14 @@ export default {
     },
 
     async submitRequest() {
-      // กรองเอาเฉพาะรายการที่เลือก
       const selectedItems = this.timeEntries.filter((e) => e.selected);
-      if (selectedItems.length === 0) {
-        alert("กรุณาเลือกรายการที่ต้องการส่งคำขอ");
-        return;
-      }
+      if (selectedItems.length === 0) return;
 
       try {
-        // ยิง API ไปที่ Backend
         const res = await api.post("/api/ot/submit", {
-          items: selectedItems.map(item => ({
-            id: item.id, // ot_id
-          })),
-          // ✅ เพิ่มบรรทัดนี้: ส่งรหัสหัวหน้างานจาก Frontend
-          // คุณอาจจะดึงจากตัวแปร, vuex store หรือ mock ไปก่อนก็ได้
+          items: selectedItems.map(item => ({ id: item.id })),
           leader_emp_id: "head001"
         });
-
-        console.log("Submit Response:", res);
-
         if (res.data && res.data.status === 'success') {
           this.dialogConfirm = false;
           await this.fetchTimeEntries();
@@ -345,31 +291,30 @@ export default {
         alert("เกิดข้อผิดพลาดในการส่งคำขอ");
       }
     },
+
     addOvertimeRequest() {
       this.overtimeMode = "create";
       this.selectedEntry = null;
       this.dialogOvertimeForm = true;
     },
+
     editOvertimeRequest(entry) {
       this.overtimeMode = "edit";
-      this.selectedEntry = {
-        ...entry,
-      };
-
-      console.log("Editing entry:", this.selectedEntry);
-
+      this.selectedEntry = { ...entry };
       this.dialogOvertimeForm = true;
     },
+
     toggleSelectAll() {
       this.timeEntries.forEach((entry) => {
         entry.selected = this.selectAll;
       });
     },
+
     updateSelectAll() {
-      this.selectAll = this.timeEntries.every((entry) => entry.selected);
+      this.selectAll = this.timeEntries.length > 0 && this.timeEntries.every((entry) => entry.selected);
     },
+
     handleSubmitOvertime(submit) {
-      console.log("บันทึก OT สำเร็จ", submit);
       this.fetchTimeEntries();
     }
   }
@@ -377,141 +322,273 @@ export default {
 </script>
 
 <style scoped>
-.entries-container {
+.custom-bg {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* เพิ่มขนาด Font ของ Label */
+.label-text {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ปรับ Input ให้ดูใหญ่ขึ้นเมื่อไม่มี dense */
+.big-input ::v-deep .v-input__slot {
+  min-height: 50px !important;
+}
+
+.big-input ::v-deep .v-select__selection {
+  font-size: 16px !important;
+}
+
+/* ปุ่มใหญ่ */
+.big-btn {
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+/* --- Entry Card Styles --- */
+.entries-list {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
+  /* เพิ่มระยะห่างระหว่างการ์ด */
 }
 
-.time-entry-card {
-  position: relative;
-  border: 1px solid #e6eef6;
-  border-radius: 14px;
-  padding: 26px 26px 24px 20px;
-  background-color: #ffffff;
-  min-height: 150px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+.entry-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  /* เพิ่ม Padding ภายในการ์ด */
+  transition: all 0.2s ease;
 }
 
-.entry-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
-}
-
-.entry-checkbox {
-  flex-shrink: 0;
-  margin-top: 12px;
-}
-
-.card-main {
-  display: grid;
-  grid-template-columns: 1fr 440px;
-  gap: 16px 32px;
-  align-items: center;
-}
-
-.top-row,
-.bottom-row {
-  display: contents;
-}
-
-.date-block,
-.in-block {
-  grid-column: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.status-block,
-.out-block {
-  grid-column: 2;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  margin: 15px;
-}
-
-.small-label {
-  font-size: 18px;
-  color: #6b6b6b;
-  font-weight: 500;
-}
-
-.colon {
-  margin: 0 6px;
-  color: #6b6b6b;
-  font-weight: 500;
-  font-size: 18px;
-}
-
-.date-value,
-.status-value,
-.detail-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: #222222;
-}
-
-.entry-edit {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  z-index: 5;
-}
-
-.edit-button-wrapper {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background-color: #ffffff;
-  overflow: hidden;
-  height: 40px;
-  padding: 0;
-}
-
-.btn-edit-icon {
-  background-color: #ffffff !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  padding: 0 !important;
+/* 1. Desktop Style */
+.desktop-card {
+  border: 1px solid #0863B6;
   box-shadow: none;
-  margin: 0 !important;
+}
+
+/* 2. Mobile Style */
+.mobile-card {
+  position: relative;
+  padding: 20px;
+  padding-top: 50px;
+}
+
+/* --- Info Group --- */
+.info-group {
+  display: flex;
+  align-items: center;
+}
+
+.info-label {
+  color: #666;
+  font-size: 16px;
+  /* ใหญ่ขึ้น */
+  min-width: 70px;
+}
+
+.info-sep {
+  margin: 0 10px;
+  color: #666;
+  font-size: 16px;
+}
+
+.info-value {
+  color: #333;
+  font-size: 16px;
+  /* ใหญ่ขึ้น */
+}
+
+.edit-btn-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  /* ปรับขนาดและระยะห่าง */
+  padding: 8px 16px;
+  border-radius: 8px;
+  /* มุมมน */
+
+  /* สีพื้นหลังและขอบเริ่มต้น */
+  background-color: #FFFFFF;
+  border: 1px solid #E0E0E0;
+
+  /* เพิ่ม Transition ให้ดูลื่นไหล */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* เพิ่มเงาเล็กน้อยให้ดูมีมิติ */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Effect ตอนเอาเมาส์ไปชี้ (Hover) */
+.edit-btn-container:hover {
+  background-color: #F0F7FF;
+  /* เปลี่ยนพื้นหลังเป็นสีฟ้าอ่อน */
+  border-color: #0863B6;
+  /* เปลี่ยนขอบเป็นสีน้ำเงิน */
+  box-shadow: 0 4px 8px rgba(8, 99, 182, 0.15);
+  /* เงาสีน้ำเงินฟุ้งๆ */
+  transform: translateY(-2px);
+  /* ลอยขึ้นเล็กน้อย */
+}
+
+/* Effect ตอนกดค้าง (Active) */
+.edit-btn-container:active {
+  transform: translateY(0);
+  /* ยุบลง */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .edit-text {
-  color: #333333;
-  padding: 0 12px;
-  white-space: nowrap;
-  line-height: 40px;
-  height: 40px;
-  font-size: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  /* ตัวหนาขึ้น */
+  color: #555555;
+  margin-left: 6px;
+  transition: color 0.2s;
 }
 
-.pencil-icon {
-  color: #6aa1d3 !important;
-  font-size: 20px;
+/* เปลี่ยนสีข้อความตอน Hover ด้วย */
+.edit-btn-container:hover .edit-text {
+  color: #0863B6;
 }
 
-::v-deep .v-checkbox label {
-  color: #333333;
+
+/* --- Edit Button --- */
+.edit-btn-wrapper {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  /* เพิ่มพื้นที่กด */
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  background-color: #f9f9f9;
+  /* ใส่พื้นหลังจางๆ ให้รู้ว่าเป็นปุ่ม */
+}
+
+.edit-btn-wrapper:hover {
+  background-color: #eef7ff;
+}
+
+.box-icon {
+  padding: 4px;
+  /* border: 1px solid #E0E0E0; เอาขอบออกเพื่อให้ดูคลีนขึ้น */
+  background: transparent;
+}
+
+.edit-text {
   font-size: 15px;
+  /* ใหญ่ขึ้น */
+  margin-left: 6px;
 }
 
-::v-deep .v-input--selection-controls {
-  margin-top: 0;
-  padding-top: 0;
+/* --- Checkbox ใหญ่ --- */
+.big-checkbox ::v-deep .v-icon {
+  font-size: 28px !important;
+  /* ไอคอนติ๊กถูกใหญ่ขึ้น */
 }
 
-::v-deep .v-input--checkbox .v-input__control {
-  margin-top: 0;
+/* --- Utilities --- */
+.gap-3 {
+  gap: 12px;
+}
+
+.gap-4 {
+  gap: 20px;
+}
+
+.gap-row {
+  gap: 24px;
+}
+
+@media (max-width: 600px) {
+  .mobile-card {
+    position: relative;
+    /* สำคัญมาก! เพื่อให้ปุ่มดินสออ้างอิงตำแหน่งจากกรอบนี้ */
+    padding: 20px;
+    padding-top: 50px;
+    /* เว้นที่ด้านบนเพิ่มอีกนิด กันข้อความทับปุ่มดินสอ */
+  }
+
+  .edit-btn-container {
+    position: absolute !important;
+    top: 16px;
+    right: 16px;
+
+    /* ทำเป็นปุ่มวงกลม */
+    background-color: #F0F7FF !important;
+    /* สีพื้นหลังฟ้าอ่อนๆ */
+    border: 1px solid #D6E4FF;
+    /* เส้นขอบจางๆ */
+    border-radius: 50%;
+    /* ทำเป็นวงกลม */
+    width: 40px;
+    /* ความกว้าง */
+    height: 40px;
+    /* ความสูง */
+
+    /* จัดไอคอนให้อยู่ตรงกลาง */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    /* ลบ Padding เดิม */
+
+    /* เพิ่มเงาให้ดูลอยๆ น่ากด */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+  }
+
+  .edit-btn-wrapper {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    padding: 8px;
+  }
+
+  .edit-btn-container .v-icon {
+    font-size: 20px !important;
+    color: #0863B6 !important;
+    margin: 0 !important;
+    /* ลบ margin เดิม */
+  }
+
+  .label-text,
+  .value-text {
+    font-size: 16px;
+  }
+
+  .time-highlight {
+    font-size: 18px;
+  }
+
+  .entry-card {
+    position: relative;
+    padding-top: 50px;
+    /* เว้นที่ด้านบนให้ปุ่ม Edit */
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* ในมือถือ ซ่อนคำว่า "แก้ไข..." ให้เหลือแต่ไอคอน แต่ขยายไอคอนให้กดง่าย */
+  .edit-text {
+    display: none;
+  }
+
+  .box-icon {
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 8px;
+    /* พื้นที่กดไอคอนดินสอใหญ่ขึ้น */
+    background: #fff;
+  }
 }
 </style>

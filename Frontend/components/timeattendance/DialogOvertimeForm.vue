@@ -1,5 +1,6 @@
 <template>
-  <v-dialog v-model="show" max-width="680px" persistent>
+  <v-dialog v-model="show" max-width="680px" persistent :fullscreen="$vuetify.breakpoint.xsOnly"
+    :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
     <v-card :style="styles.card">
       <v-card-title class="d-flex justify-center align-center" :style="styles.header">
         <span class="font-weight-bold text-center" :style="styles.headerTitle">
