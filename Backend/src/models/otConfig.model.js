@@ -37,9 +37,9 @@ const OtConfigModel = {
       INSERT INTO ot_config (
         name, employee_type_id, day_type, ot_period, rate, 
         start_condition, start_time, min_continuous_hours, 
-        require_break, break_minutes, description, is_active
+        require_break, break_minutes, description, is_active, created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -55,6 +55,7 @@ const OtConfigModel = {
       data.break_minutes,
       data.description,
       data.is_active,
+      new Date()
     ];
 
     const [result] = await db.query(sql, values);

@@ -10,7 +10,7 @@
       <!-- ✅ WHITE BACKGROUND AREA (Table + Pagination) -->
       <v-container fluid class="white-area mt-4 pa-4 rounded-xl">
         <EmployeeTable :key="tableKey" :items="paginatedEmployees" :total-items="filteredEmployees.length"
-          :loading="loading" :is-selectable="isPendingMode"
+          :loading="loading" :is-selectable="isPendingMode" :show-approve="statusFilter === 'pending_hr'"
           v-model="selectedRequests" @approve="openAction('approve')" @reject="openAction('reject')"
           @view="openTracking" />
 

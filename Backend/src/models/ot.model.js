@@ -102,9 +102,9 @@ const OtModel = {
     const sql = `
       INSERT INTO ot (
         request_id, start_time, end_time, description, 
-        emp_id, total, created_by
+        emp_id, total, created_by, created_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -115,6 +115,7 @@ const OtModel = {
       data.emp_id,
       data.total || 0,
       data.created_by,
+      new Date(),
     ];
 
     const executor = conn || db;

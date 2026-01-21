@@ -143,23 +143,19 @@ export const calculateOtDetails = (
   let currentCursor = reqStart;
   let grandTotalHours = 0;
 
-  // --- Loop: Time Slicing ---
   while (currentCursor.isBefore(reqEnd)) {
     const period = getOtPeriod(currentCursor, workStartBound, workEndBound);
     let nextCursor = reqEnd;
 
-    // ตัดช่วงเวลา (Slicing) เหมือนเดิม
     if (period === OT_PERIOD.BEFORE) {
       nextCursor = reqEnd.isBefore(workStartBound) ? reqEnd : workStartBound;
     } else if (period === OT_PERIOD.DURING) {
       nextCursor = reqEnd.isBefore(workEndBound) ? reqEnd : workEndBound;
     }
 
-    // ✅ ลบ isNormalEmpSkip ทิ้งไปเลย ให้ Config คุม 100%
     const segmentDuration = nextCursor.diff(currentCursor, "minute") / 60.0;
 
     if (segmentDuration > 0) {
-      // หา Config ที่ Active และตรงเงื่อนไข
       const matchedConfig = allConfigs.find(
         (cfg) =>
           cfg.employee_type_id == typeId &&
