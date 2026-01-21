@@ -23,26 +23,6 @@ const OtDetailModel = {
   },
 
   // ✅ แก้ไข: เพิ่ม parameter conn
-  async createOne(otId, detail, conn = null) {
-    const sql = `
-      INSERT INTO ot_detail (ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate)
-      VALUES (?, ?, ?, ?, ?)
-    `;
-    const values = [
-      otId,
-      detail.ot_start_time,
-      detail.ot_end_time,
-      detail.ot_hour,
-      detail.ot_rate,
-    ];
-
-    // ✅ ใช้ conn ถ้ามีส่งมา (Executor)
-    const executor = conn || db;
-    const [result] = await executor.query(sql, values);
-    return { id: result.insertId, ot_id: otId, ...detail };
-  },
-
-  // ✅ แก้ไข: เพิ่ม parameter conn
   async createMany(otId, details, conn = null) {
     const sql = `
       INSERT INTO ot_detail (ot_id, ot_start_time, ot_end_time, ot_hour, ot_rate)
