@@ -1,55 +1,64 @@
 <template>
-  <v-container fluid class="ot-page px-4 px-md-10 py-6 grey lighten-5">
-    <v-row justify="center">
-      <v-col cols="12" md="11" lg="11">
-        <StatsGrid :stats="otStats" :active-id="selectedTypeId" class="mb-6" @click-stat="handleStatClick" />
+  <v-app style="background-color: #F8F9FA; font-family: 'Sarabun', sans-serif;">
+    <v-main class="pa-6">
 
-        <div class="d-flex flex-wrap align-center gap-3 mb-4">
-          <v-text-field v-model="search" prepend-inner-icon="mdi-magnify" placeholder="ค้นหาชื่อการตั้งค่า..." outlined
-            dense hide-details class="white rounded-lg search-field"></v-text-field>
+      <!-- Stats -->
+      <StatsGrid :stats="otStats" :active-id="selectedTypeId" class="mb-6" @click-stat="handleStatClick" />
 
-          <v-btn color="white" elevation="0" class="blue--text rounded-lg border-btn" height="40">
-            <v-icon left size="18">mdi-filter-variant</v-icon>
-            <span class="d-none d-sm-inline">ตัวกรอง</span>
-          </v-btn>
+      <!-- Filter Toolbar -->
+      <v-card flat class="rounded-xl pa-2 mb-6 white" style="border: 1px solid #EAEAEA;">
+        <v-row align="center" no-gutters class="pa-2">
+          <v-col cols="12" md="4" class="pr-md-4 mb-2 mb-md-0">
+            <v-text-field v-model="search" dense outlined flat hide-details placeholder="ค้นหาชื่อการตั้งค่า..."
+              prepend-inner-icon="mdi-magnify" class="rounded-lg custom-text-field" background-color="#F7F9FC" />
+          </v-col>
+          <v-col cols="auto">
+            <v-btn depressed color="#E3F2FD" class="rounded-lg px-4 primary--text font-weight-bold" height="40">
+              <v-icon left size="20">mdi-filter-variant</v-icon> ตัวกรอง
+            </v-btn>
+          </v-col>
+          <v-spacer></v-spacer>
+          <v-col cols="auto">
+            <v-btn color="#2563eb" dark class="rounded-lg px-6 text-none font-weight-bold" depressed
+              @click="openAddDialog" height="40">
+              <v-icon left>mdi-plus-circle</v-icon>
+              เพิ่มประเภทการจ้าง
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card>
 
-          <v-spacer class="d-none d-sm-block"></v-spacer>
+      <!-- Content Area -->
+      <v-container fluid class="white-area mt-4 pa-0 rounded-xl overflow-hidden">
+        <div class="px-4 py-4 border-bottom d-flex align-center">
+          <v-icon color="blue" class="mr-2">mdi-format-list-bulleted</v-icon>
+          <span class="blue--text subtitle-1 font-weight-bold">รายการตั้งค่า ({{ filteredConfigs.length }})</span>
 
-          <v-btn color="#2563eb" dark class="btn-add-pill px-6 text-none w-full-mobile ml-auto ml-sm-0" depressed
-            @click="openAddDialog" height="40">
-            <v-icon left>mdi-plus-circle</v-icon>
-            เพิ่มประเภทการจ้าง
-          </v-btn>
+          <v-chip v-if="selectedTypeId && selectedTypeId !== 'all'" close @click:close="selectedTypeId = 'all'"
+            class="ml-3" small color="blue lighten-5" text-color="blue">
+            <span class="d-none d-sm-inline mr-1">กรอง:</span>
+            <strong>{{ getStatLabel(selectedTypeId) }}</strong>
+          </v-chip>
         </div>
 
-        <v-card outlined class="rounded-xl border-light overflow-hidden">
-          <v-card-title class="pb-4 blue--text subtitle-1 font-weight-bold px-4 border-bottom">
-            <v-icon color="blue" class="mr-2">mdi-format-list-bulleted</v-icon>
-            รายการตั้งค่า ({{ filteredConfigs.length }})
-
-            <v-chip v-if="selectedTypeId && selectedTypeId !== 'all'" close @click:close="selectedTypeId = 'all'"
-              class="ml-3" small color="blue lighten-5" text-color="blue">
-              <span class="d-none d-sm-inline mr-1">กรอง:</span>
-              <strong>{{ getStatLabel(selectedTypeId) }}</strong>
-            </v-chip>
-          </v-card-title>
-
+        <div class="pa-4">
           <OvertimeSetting :items="filteredConfigs" :loading="loading" @edit="handleEdit" @refresh="fetchData" />
-        </v-card>
-      </v-col>
-    </v-row>
+        </div>
+      </v-container>
 
-    <v-dialog v-model="dialogVisible" max-width="650px" persistent
-      :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
-      <OvertimeTypeForm ref="otForm" :edit-data="selectedItem" @close="dialogVisible = false" @saved="onFormSaved" />
-    </v-dialog>
-  </v-container>
+      <v-dialog v-model="dialogVisible" max-width="650px" persistent
+        :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
+        <OvertimeTypeForm ref="otForm" :edit-data="selectedItem" @close="dialogVisible = false" @saved="onFormSaved" />
+      </v-dialog>
+
+    </v-main>
+  </v-app>
 </template>
 
 <script>
 import OvertimeTypeForm from '~/components/overtimeconfig/OvertimeTypeForm.vue'
 import OvertimeSetting from '~/components/overtimeconfig/OvertimeSetting.vue'
-import StatsGrid from '~/components/overtimeconfig/StatsGrid.vue'
+import StatsGrid from '@/components/global/StatsGrid.vue'
 import api from "~/service/api"
 
 export default {
@@ -64,12 +73,12 @@ export default {
       selectedTypeId: 'all',
       otConfigs: [],
       otStats: [
-        { label: 'ทั้งหมด', value: 0, icon: 'mdi-file-document', color: '#1976D2', id: 'all' },
-        { label: 'พนักงานปกติ', value: 0, icon: 'mdi-account', color: '#FFA000', id: 1 },
-        { label: 'กะปกติ', value: 0, icon: 'mdi-clock-outline', color: '#6366f1', id: 2 },
-        { label: 'กะ 12ชม', value: 0, icon: 'mdi-hours-12', color: '#4CAF50', id: 3 },
-        { label: 'รายชั่วโมง', value: 0, icon: 'mdi-account-clock', color: '#EF5350', id: 4 },
-        { label: 'ไม่ใช้งาน', value: 0, icon: 'mdi-account-off', color: '#78909C', id: 'inactive' },
+        { label: 'ทั้งหมด', count: 0, icon: 'mdi-file-document-outline', color: '#1976D2', bg: '#E3F2FD', id: 'all' },
+        { label: 'พนักงานปกติ', count: 0, icon: 'mdi-account-outline', color: '#FFA000', bg: '#FFF8E1', id: 1 },
+        { label: 'กะปกติ', count: 0, icon: 'mdi-clock-time-four-outline', color: '#6366f1', bg: '#EEF2FF', id: 2 },
+        { label: 'กะ 12ชม', count: 0, icon: 'mdi-hours-12', color: '#4CAF50', bg: '#E8F5E9', id: 3 },
+        { label: 'รายชั่วโมง', count: 0, icon: 'mdi-account-clock-outline', color: '#EF5350', bg: '#FFEBEE', id: 4 },
+        { label: 'ไม่ใช้งาน', count: 0, icon: 'mdi-account-off-outline', color: '#78909C', bg: '#ECEFF1', id: 'inactive' },
       ],
     }
   },
@@ -112,11 +121,11 @@ export default {
       this.fetchData();
     },
     updateStats() {
-      this.otStats[0].value = this.otConfigs.length;
+      this.otStats[0].count = this.otConfigs.length;
       this.otStats.slice(1, 5).forEach(stat => {
-        stat.value = this.otConfigs.filter(i => i.employee_type_id === stat.id).length;
+        stat.count = this.otConfigs.filter(i => i.employee_type_id === stat.id).length;
       });
-      this.otStats[5].value = this.otConfigs.filter(i => !i.is_active).length;
+      this.otStats[5].count = this.otConfigs.filter(i => !i.is_active).length;
     },
     getStatLabel(id) {
       return this.otStats.find(s => s.id === id)?.label || '';
@@ -126,40 +135,16 @@ export default {
 </script>
 
 <style scoped>
-.gap-3 {
-  gap: 12px;
+.white-area {
+  background-color: #ffffff;
+  border: 1px solid #eaeaea;
 }
 
-.search-field {
-  min-width: 280px;
-}
-
-.border-btn {
-  border: 1px solid #e3f2fd !important;
-}
-
-.border-light {
-  border: 1px solid #eef2f6 !important;
+.custom-text-field>>>.v-input__slot {
+  background-color: #F7F9FC !important;
 }
 
 .border-bottom {
   border-bottom: 1px solid #f0f0f0;
-}
-
-.btn-add-pill {
-  border-radius: 50px;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
-}
-
-@media (max-width: 600px) {
-  .search-field {
-    width: 100%;
-    min-width: 100%;
-  }
-
-  .w-full-mobile {
-    width: 100%;
-    margin-top: 8px;
-  }
 }
 </style>

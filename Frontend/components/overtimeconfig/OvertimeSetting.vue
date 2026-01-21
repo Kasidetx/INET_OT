@@ -1,8 +1,8 @@
 <template>
-  <v-card outlined class="rounded-xl overflow-hidden border-light">
+  <div style="font-family: 'Sarabun', sans-serif">
     <v-progress-linear v-if="loading" indeterminate color="primary"></v-progress-linear>
 
-    <v-simple-table v-if="!$vuetify.breakpoint.xsOnly" class="custom-table">
+    <v-simple-table v-if="!$vuetify.breakpoint.xsOnly" class="custom-table rounded-lg overflow-hidden">
       <template v-slot:default>
         <thead>
           <tr class="blue lighten-5">
@@ -45,7 +45,7 @@
             </td>
 
             <td class="text-center">
-              <span class="text-h6 font-weight-bold blue--text">{{ item.rate }}</span>
+              <span class="font-weight-bold blue--text">{{ item.rate }}</span>
             </td>
 
             <td class="text-center">
@@ -161,7 +161,7 @@
         <v-icon>mdi-chevron-right</v-icon>
       </v-btn>
     </div>
-  </v-card>
+  </div>
 </template>
 
 <script>
@@ -227,8 +227,8 @@ export default {
 </script>
 
 <style scoped>
-.border-light {
-  border: 1px solid #eef2f6 !important;
+.custom-table {
+  border: 1px solid #E0E0E0;
 }
 
 .bg-gray-light {
