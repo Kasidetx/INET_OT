@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import dayjs from "dayjs";
 
 const OtModel = {
   async AllEmployee(empId) {
@@ -141,11 +142,62 @@ const OtModel = {
     return result.affectedRows > 0;
   },
 
+  async getNextDocNo(conn) {
+    // 1. เตรียมข้อมูลวันที่ปัจจุบัน (AD และ BE)
+    const now = dayjs();
+    const currentDateStr = now.format("YYYY-MM-DD"); // 2025-01-21 (ใช้เช็คกับ DB)
+
+    // คำนวณปี พ.ศ. และ Format Prefix (25680121)
+    const beYear = now.year() + 543;
+    const month = now.format("MM");
+    const day = now.format("DD");
+    const docPrefix = `${beYear}${month}${day}`; // ex: 25680121
+
+    // 2. Lock Row เพื่อความปลอดภัย (ห้ามใครแย่ง)
+    const sqlGet =
+      "SELECT current_value, last_run_date FROM running_sequence WHERE name = 'OT_REQUEST' FOR UPDATE";
+    const [rows] = await conn.query(sqlGet);
+
+    let nextVal = 1;
+
+    if (rows.length > 0) {
+      const row = rows[0];
+      // แปลงวันที่จาก DB เป็น String เพื่อเปรียบเทียบ
+      const dbDate = row.last_run_date
+        ? dayjs(row.last_run_date).format("YYYY-MM-DD")
+        : "";
+
+      if (dbDate === currentDateStr) {
+        // ถ้าเป็นวันเดิม -> นับต่อ
+        nextVal = row.current_value + 1;
+      } else {
+        // ถ้าวันเปลี่ยนแล้ว -> รีเซ็ตเป็น 1
+        nextVal = 1;
+      }
+
+      // บันทึกค่าล่าสุดกลับลงไป
+      await conn.query(
+        "UPDATE running_sequence SET current_value = ?, last_run_date = ? WHERE name = 'OT_REQUEST'",
+        [nextVal, currentDateStr],
+      );
+    } else {
+      // ถ้าเพิ่งรันระบบครั้งแรก Insert แถวใหม่เลย
+      await conn.query(
+        "INSERT INTO running_sequence (name, current_value, last_run_date) VALUES ('OT_REQUEST', 1, ?)",
+        [currentDateStr],
+      );
+    }
+
+    // 3. ประกอบร่าง: OT + 25680121 + 00001
+    // padStart(5, '0') คือเติม 0 ข้างหน้าให้ครบ 5 หลัก
+    return `OT-${docPrefix}${String(nextVal).padStart(5, "0")}`;
+  },
+
   async updateRequestStatus(
     requestId,
     status,
     conn = null,
-    reason = undefined
+    reason = undefined,
   ) {
     let sql = `UPDATE request SET sts = ?`;
     const params = [status];

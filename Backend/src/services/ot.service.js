@@ -10,7 +10,6 @@ import EmpModel from "../models/emp.model.js";
 import dayjs from "dayjs";
 import {
   calculateOtDetails,
-  generateNextDocNo,
 } from "../utils/otCalculation.js";
 
 // --- Service Logic ---
@@ -41,8 +40,7 @@ const OtService = {
 
     try {
       // 1. Prepare Data
-      const lastDoc = await OtModel.getLastRequestDocNo();
-      const docNo = generateNextDocNo(lastDoc);
+      const docNo = await OtModel.getNextDocNo(conn);
       let total = 0;
       let details = [];
 

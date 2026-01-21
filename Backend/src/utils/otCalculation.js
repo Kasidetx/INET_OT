@@ -111,15 +111,6 @@ const _calculateNetHours = (duration, config) => {
   return Math.max(0, parseFloat((duration - deductionInHours).toFixed(2)));
 };
 
-export const generateNextDocNo = (lastDocNo) => {
-  if (!lastDocNo) return "OT-1";
-  const parts = lastDocNo.split("-");
-  if (parts.length < 2) return "OT-1";
-
-  const numberPart = parseInt(parts[1], 10);
-  return isNaN(numberPart) ? "OT-1" : `OT-${numberPart + 1}`;
-};
-
 // ==========================================
 // Main Function
 // ==========================================
