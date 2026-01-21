@@ -11,6 +11,10 @@ export const OT_PERIOD = {
 
 export const OT_STATUS = {
   DRAFT: 0,
-  SUBMIT: 1,
-  APPROVE: 2,
+  PENDING_HEAD: 1,
+  PENDING_HR: 2,
+  APPROVED: 3,
+  REJECT_HEAD: 4,
+  REJECT_HR: 5,
+  CANCEL: 6,
 };
