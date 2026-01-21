@@ -61,7 +61,7 @@ const OtService = {
           realEmpTypeId,
           allConfigs,
           holidayList,
-          workdayConfigs
+          workdayConfigs,
         );
         total = calcResult.total;
         details = calcResult.details;
@@ -76,7 +76,7 @@ const OtService = {
           sts: data.sts ?? 1,
           created_by: data.created_by,
         },
-        conn
+        conn,
       );
 
       const createdOt = await OtModel.create(
@@ -89,7 +89,7 @@ const OtService = {
           total,
           created_by: data.created_by,
         },
-        conn
+        conn,
       );
 
       // 4. Insert Details & Flow
@@ -141,7 +141,7 @@ const OtService = {
           realEmpTypeId, // ✅ ใช้ Type จริง
           allConfigs,
           holidayList,
-          workdayConfigs
+          workdayConfigs,
         );
         total = calcResult.total;
         details = calcResult.details;
@@ -151,36 +151,40 @@ const OtService = {
       await OtModel.update(
         id,
         {
-          // ถ้า data.x มีค่า ให้ใช้ data.x ถ้าไม่มี ให้ใช้ของเดิม (existingOt.x)
           start_time: data.start_time || existingOt.start_time,
           end_time: data.end_time || existingOt.end_time,
-
-          // เช็ค !== undefined เพื่อรองรับกรณีส่งค่าว่าง "" มา
           description:
             data.description !== undefined
               ? data.description
               : existingOt.description,
-
           emp_id: data.emp_id || existingOt.emp_id,
           created_by: data.created_by || existingOt.created_by,
           total: total,
         },
-        conn
+        conn,
       );
 
       if (data.sts !== undefined && existingOt.request_id) {
-        // ✅ ส่ง 4 ตัวแปร: (id, status, conn, reason)
+        // ✅ 1. อัปเดตสถานะในตาราง Request (ตาม code เดิม)
         await OtModel.updateRequestStatus(
           existingOt.request_id,
           data.sts,
-          conn, // ตัวที่ 3: Connection
-          data.cancellation_reason || null // ตัวที่ 4: Reason (ถ้าไม่มีให้ส่ง null ไปล้างค่าเก่า)
+          conn,
+          data.cancellation_reason || null,
         );
+
+        // ✅ 2. [เพิ่มส่วนนี้] ถ้าสถานะเป็น 0 (ยกเลิก) หรือ 6 ให้ไปอัปเดตตาราง Approval เป็น 6 ด้วย
+        if (data.sts === 0 || data.sts === 6) {
+          await ApprovalModel.updateStatusByRequestId(
+            existingOt.request_id,
+            6,
+            conn,
+          );
+        }
       }
 
       // Update Details (ถ้ามีการคำนวณใหม่)
       if (details.length > 0) {
-        // ลบของเก่า -> ลงของใหม่
         await conn.query("DELETE FROM ot_detail WHERE ot_id = ?", [id]);
         await OtDetailModel.createMany(id, details, conn);
       }
@@ -207,7 +211,7 @@ const OtService = {
       const allDetails = await OtDetailModel.findByOtId(otId, conn);
       const totalHour = allDetails.reduce(
         (sum, d) => sum + (d.ot_hour || 0),
-        0
+        0,
       );
 
       // 3. Update Header
@@ -257,7 +261,7 @@ const OtService = {
           realEmpTypeId, // ✅ ใส่ตัวแปรที่หามาแทนเลข 1
           allConfigs,
           holidayList,
-          workdayConfigs
+          workdayConfigs,
         );
 
         // Update Details (ลบเก่า -> สร้างใหม่)
@@ -320,7 +324,7 @@ const OtService = {
           realEmpTypeId,
           allConfigs,
           holidayList,
-          workdayConfigs
+          workdayConfigs,
         );
 
         // Update DB
@@ -337,7 +341,7 @@ const OtService = {
             total: calcResult.total,
             description: undefined, // ไม่แก้ Description เดิม
           },
-          conn
+          conn,
         );
       }
 

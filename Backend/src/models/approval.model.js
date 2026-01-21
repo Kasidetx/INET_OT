@@ -34,6 +34,20 @@ const approvalModel = {
     return rows[0] || null;
   },
 
+  async updateStatusByRequestId(requestId, status, conn = null) {
+    const sql = `
+      UPDATE approval
+      SET approval_status = ?, action_at = ?
+      WHERE request_id = ?
+    `;
+
+    const values = [status, new Date(), requestId];
+    const executor = conn || db;
+
+    // ใช้ query (สำหรับ mysql2/promise)
+    await executor.query(sql, values);
+  },
+
   async createFlow(requestId, approvers, conn = null) {
     const sql = `
       INSERT INTO approval
