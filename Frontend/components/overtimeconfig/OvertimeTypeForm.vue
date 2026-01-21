@@ -6,8 +6,6 @@
     </v-card-title>
 
     <v-divider class="mb-4" />
-
-
     <v-card-text>
       <v-row>
         <!-- ชื่อ config -->

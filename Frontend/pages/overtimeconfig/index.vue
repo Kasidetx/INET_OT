@@ -1,36 +1,36 @@
 <template>
-  <v-container fluid class="ot-page px-10 py-6 grey lighten-5">
+  <v-container fluid class="ot-page px-4 px-md-10 py-6 grey lighten-5">
     <v-row justify="center">
       <v-col cols="12" md="11" lg="11">
-
-        <div class="mb-6">
-          <h2 class="text-h5 font-weight-bold grey--text text--darken-3">ตั้งค่า OT Config</h2>
-        </div>
-
         <StatsGrid :stats="otStats" :active-id="selectedTypeId" class="mb-6" @click-stat="handleStatClick" />
 
-        <div class="d-flex align-center flex-wrap gap-4 mb-4">
+        <div class="d-flex flex-wrap align-center gap-3 mb-4">
           <v-text-field v-model="search" prepend-inner-icon="mdi-magnify" placeholder="ค้นหาชื่อการตั้งค่า..." outlined
-            dense hide-details class="white rounded-lg" style="max-width: 300px;"></v-text-field>
+            dense hide-details class="white rounded-lg search-field"></v-text-field>
 
-          <v-btn color="blue lighten-5" elevation="0" class="blue--text rounded-lg ml-2 text-none" height="40">
-            <v-icon left size="18">mdi-filter-variant</v-icon> ตัวกรอง
+          <v-btn color="white" elevation="0" class="blue--text rounded-lg border-btn" height="40">
+            <v-icon left size="18">mdi-filter-variant</v-icon>
+            <span class="d-none d-sm-inline">ตัวกรอง</span>
           </v-btn>
 
-          <v-spacer></v-spacer>
+          <v-spacer class="d-none d-sm-block"></v-spacer>
 
-          <v-btn class="btn-add-pill px-6 text-none" depressed @click="openAddDialog">
-            <v-icon left color="white">mdi-plus-circle</v-icon>
+          <v-btn color="#2563eb" dark class="btn-add-pill px-6 text-none w-full-mobile ml-auto ml-sm-0" depressed
+            @click="openAddDialog" height="40">
+            <v-icon left>mdi-plus-circle</v-icon>
             เพิ่มประเภทการจ้าง
           </v-btn>
         </div>
 
         <v-card outlined class="rounded-xl border-light overflow-hidden">
-          <v-card-title class="pb-4 blue--text subtitle-1 font-weight-bold px-4">
-            รายการเอกสาร {{ filteredConfigs.length }} รายการ
+          <v-card-title class="pb-4 blue--text subtitle-1 font-weight-bold px-4 border-bottom">
+            <v-icon color="blue" class="mr-2">mdi-format-list-bulleted</v-icon>
+            รายการตั้งค่า ({{ filteredConfigs.length }})
+
             <v-chip v-if="selectedTypeId && selectedTypeId !== 'all'" close @click:close="selectedTypeId = 'all'"
-              class="ml-2" small>
-              กรองโดย: {{ getStatLabel(selectedTypeId) }}
+              class="ml-3" small color="blue lighten-5" text-color="blue">
+              <span class="d-none d-sm-inline mr-1">กรอง:</span>
+              <strong>{{ getStatLabel(selectedTypeId) }}</strong>
             </v-chip>
           </v-card-title>
 
@@ -39,7 +39,8 @@
       </v-col>
     </v-row>
 
-    <v-dialog v-model="dialogVisible" max-width="650px" persistent>
+    <v-dialog v-model="dialogVisible" max-width="650px" persistent :fullscreen="$vuetify.breakpoint.xsOnly"
+      :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
       <OvertimeTypeForm ref="otForm" :edit-data="selectedItem" @close="dialogVisible = false" @saved="onFormSaved" />
     </v-dialog>
   </v-container>
@@ -50,9 +51,10 @@ import OvertimeTypeForm from '~/components/overtimeconfig/OvertimeTypeForm.vue'
 import OvertimeSetting from '~/components/overtimeconfig/OvertimeSetting.vue'
 import StatsGrid from '~/components/overtimeconfig/StatsGrid.vue'
 import api from "~/service/api"
+
 export default {
   name: 'OvertimeTypePage',
-  components: { OvertimeTypeForm,  StatsGrid, OvertimeSetting },
+  components: { OvertimeTypeForm, StatsGrid, OvertimeSetting },
   data() {
     return {
       search: '',
@@ -81,10 +83,10 @@ export default {
       }
       if (this.search) {
         const s = this.search.toLowerCase();
-        data = data.filter(i => i.description?.toLowerCase().includes(s));
+        data = data.filter(i => i.description?.toLowerCase().includes(s) || i.name?.toLowerCase().includes(s));
       }
       return data;
-    } 
+    }
   },
   mounted() { this.fetchData(); },
   methods: {
@@ -124,46 +126,40 @@ export default {
 </script>
 
 <style scoped>
+.gap-3 {
+  gap: 12px;
+}
+
+.search-field {
+  min-width: 280px;
+}
+
+.border-btn {
+  border: 1px solid #e3f2fd !important;
+}
+
 .border-light {
   border: 1px solid #eef2f6 !important;
 }
 
-.custom-table ::v-deep table {
-  background-color: transparent !important;
-}
-
-.custom-table ::v-deep thead th {
-  background-color: #f1f5f9 !important;
-  font-size: 13px !important;
-  color: #64748b !important;
-  font-weight: 600 !important;
-  border-bottom: none !important;
-}
-
-.custom-table ::v-deep tbody td {
-  font-size: 14px !important;
-  padding: 12px 16px !important;
-  border-bottom: 1px solid #f1f5f9 !important;
+.border-bottom {
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .btn-add-pill {
-  background-color: #2563eb !important;
-  /* สีน้ำเงินสดตามรูป */
-  color: white !important;
-  border-radius: 999px !important;
-  /* ทำให้ขอบมนแบบ Pill */
-  height: 42px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.5px !important;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
-  /* เพิ่มเงาสีน้ำเงินจางๆ */
-  transition: all 0.2s ease;
+  border-radius: 50px;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
 }
 
-.btn-add-pill:hover {
-  background-color: #1d4ed8 !important;
-  /* สีเข้มขึ้นเมื่อ Hover */
-  transform: translateY(-1px);
-  box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3) !important;
+@media (max-width: 600px) {
+  .search-field {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .w-full-mobile {
+    width: 100%;
+    margin-top: 8px;
+  }
 }
 </style>
