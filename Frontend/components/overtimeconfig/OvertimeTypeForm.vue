@@ -7,28 +7,28 @@
 
     <v-divider class="mb-4" />
     <v-card-text>
-      <v-row>
+      <v-row dense>
         <!-- ชื่อ config -->
-        <v-col cols="12">
-          <label class="field-label">ชื่อการตั้งค่า*</label>
+        <v-col cols="12" md="6">
+          <label class="field-label">ชื่อการตั้งค่า <span style="color: red;">*</span> </label>
           <v-text-field v-model="form.name" placeholder="เช่น โอทีพนักงานรายวัน (จ-ศ)" outlined dense />
         </v-col>
 
         <!-- ประเภทพนักงาน -->
-        <v-col cols="12">
-          <label class="field-label">ประเภทพนักงาน*</label>
+        <v-col cols="12" md="6">
+          <label class="field-label">ประเภทพนักงาน <span style="color: red;">*</span> </label>
           <v-select v-model="form.employeeTypeName" :items="employeeTypes" outlined dense @change="onUserChange" />
         </v-col>
 
         <!-- ประเภทวัน -->
         <v-col cols="12" md="6">
-          <label class="field-label">ประเภทวัน*</label>
+          <label class="field-label">ประเภทวัน <span style="color: red;">*</span> </label>
           <v-select v-model="form.Worknametype" :items="dayTypes" outlined dense @change="onUserChange" />
         </v-col>
 
         <!-- ช่วงเวลา -->
         <v-col cols="12" md="6">
-          <label class="field-label">ช่วงเวลาทำงาน*</label>
+          <label class="field-label">ช่วงเวลาทำงาน <span style="color: red;">*</span> </label>
           <v-select v-model="form.otPeriod" :items="periodTypes" outlined dense @change="onUserChange" />
         </v-col>
 
@@ -47,7 +47,7 @@
 
         <!-- rate -->
         <v-col cols="12" md="6">
-          <label class="field-label">ค่าล่วงเวลา (เท่า)*</label>
+          <label class="field-label">ค่าล่วงเวลา (เท่า) <span style="color: red;">*</span> </label>
           <v-text-field v-model.number="form.rate" type="number" min="1" max="3" step="0.5" outlined dense
             hint="ค่าที่แนะนำจากระบบ" persistent-hint />
         </v-col>
