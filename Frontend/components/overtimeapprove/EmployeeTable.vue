@@ -95,7 +95,6 @@
           :selected.sync="selectedRequestsByEmp[item.id]" @view="onView" />
       </div>
     </v-expand-transition>
-
   </div>
 </div>
 
@@ -301,7 +300,7 @@ export default {
             </div>
             <div class="caption grey--text">
               รวมชั่วโมง: <span class="primary--text font-weight-bold" style="font-size: 1rem;">{{ item.totalHours
-                }}</span>
+              }}</span>
             </div>
           </div>
         </div>

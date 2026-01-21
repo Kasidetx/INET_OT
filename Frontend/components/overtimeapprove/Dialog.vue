@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="visible" :max-width="step === 'success' ? 520 : (type === 'approve' ? 520 : 820)"
-    :scrollable="step !== 'success' && type !== 'approve'" persistent :fullscreen="$vuetify.breakpoint.xsOnly"
+    :scrollable="step !== 'success' && type !== 'approve'" persistent
     :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
     <v-card class="rounded-xl" style="overflow:hidden; display: flex; flex-direction: column; max-height: 100vh;">
 

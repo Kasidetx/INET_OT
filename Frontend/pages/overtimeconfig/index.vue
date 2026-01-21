@@ -39,7 +39,7 @@
       </v-col>
     </v-row>
 
-    <v-dialog v-model="dialogVisible" max-width="650px" persistent :fullscreen="$vuetify.breakpoint.xsOnly"
+    <v-dialog v-model="dialogVisible" max-width="650px" persistent
       :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
       <OvertimeTypeForm ref="otForm" :edit-data="selectedItem" @close="dialogVisible = false" @saved="onFormSaved" />
     </v-dialog>

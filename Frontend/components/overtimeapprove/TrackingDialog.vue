@@ -1,5 +1,5 @@
 <template>
-    <v-dialog v-model="visible" max-width="640" persistent :fullscreen="$vuetify.breakpoint.xsOnly"
+    <v-dialog v-model="visible" max-width="640" persistent
         :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
         <v-card class="rounded-xl d-flex flex-column" style="overflow:hidden; max-height: 100vh;">
 
@@ -164,18 +164,18 @@ export default {
             };
         },
         step1Id() {
-            if (this.docStatus === 6) return 6;
             const s = this.headApprover.status;
             if (s === 3) return 3;
             if (s === 4) return 4;
+            if (s === 6) return 6;
             return 1;
         },
         step2Id() {
-            if (this.docStatus === 6) return 6;
             if (this.docStatus === 4) return 0;
             const s = this.hrApprover.status;
             if (s === 3) return 3;
             if (s === 5) return 5;
+            if (s === 6) return 6;
             if (this.docStatus >= 2) return 2;
             return 0;
         }

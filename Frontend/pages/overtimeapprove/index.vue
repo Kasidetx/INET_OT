@@ -1,20 +1,6 @@
 <template>
   <v-app style="background-color: #F8F9FA; font-family: 'Sarabun', sans-serif;">
     <v-main class="pa-6">
-
-      <!-- Tabs -->
-      <div class="mb-6">
-        <v-tabs background-color="transparent" color="#1E88E5" slider-size="3">
-          <v-tab class="font-weight-bold text-body-1 px-0 mr-8" style="letter-spacing:0;">
-            อนุมัติค่าล่วงเวลา
-          </v-tab>
-          <v-tab class="font-weight-medium text-body-1 grey--text px-0" style="letter-spacing:0;" disabled>
-            อนุมัติค่ารักษา
-          </v-tab>
-        </v-tabs>
-        <v-divider></v-divider>
-      </div>
-
       <!-- Stats -->
       <StatsGrid :stats="stats" :current-filter="statusFilter" @update:filter="statusFilter = $event" />
 

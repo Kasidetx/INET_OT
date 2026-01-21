@@ -1,13 +1,8 @@
 <template>
-  <v-dialog 
-    v-model="show" 
-    max-width="900px" 
-    persistent
-    :fullscreen="$vuetify.breakpoint.xsOnly"
-    :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'"
-  >
+  <v-dialog v-model="show" max-width="900px" persistent
+    :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
     <v-card class="rounded-xl d-flex flex-column" style="max-height: 100vh;">
-      
+
       <v-card-title class="blue lighten-5 d-flex justify-center py-4 relative flex-shrink-0">
         <span class="text-h6 font-weight-bold blue--text text--darken-3">
           รายละเอียดเบิกค่าล่วงเวลา
@@ -18,7 +13,7 @@
       </v-card-title>
 
       <v-card-text class="pa-4 pa-md-6 flex-grow-1 overflow-y-auto">
-        
+
         <div class="subtitle-1 font-weight-bold mb-4 black--text">รายละเอียดเอกสาร</div>
 
         <div v-if="item" class="info-section mb-6">
@@ -61,7 +56,7 @@
         <div class="subtitle-1 font-weight-bold mb-3 black--text">รายการเวลาทำงาน</div>
 
         <v-card outlined elevation="0" class="rounded-lg overflow-hidden border-light">
-          
+
           <div v-if="loading" class="pa-8 text-center">
             <v-progress-circular indeterminate color="primary"></v-progress-circular>
             <div class="mt-2 grey--text caption">กำลังโหลดข้อมูล...</div>
@@ -72,7 +67,7 @@
           </div>
 
           <template v-else>
-            
+
             <v-simple-table v-if="!$vuetify.breakpoint.xsOnly">
               <template v-slot:default>
                 <thead class="grey lighten-5">
@@ -103,7 +98,8 @@
             </v-simple-table>
 
             <div v-else class="pa-3 bg-gray-light">
-              <div v-for="(detail, i) in details" :key="i" class="mobile-detail-card mb-3 pa-3 rounded-lg white elevation-1">
+              <div v-for="(detail, i) in details" :key="i"
+                class="mobile-detail-card mb-3 pa-3 rounded-lg white elevation-1">
                 <div class="d-flex justify-space-between align-center mb-2">
                   <div class="font-weight-bold text-body-1 primary--text">
                     {{ detail.date }}
@@ -112,7 +108,7 @@
                     {{ detail.rate }} เท่า
                   </v-chip>
                 </div>
-                
+
                 <v-divider class="mb-2 border-dashed"></v-divider>
 
                 <div class="d-flex justify-space-between align-center">
@@ -133,15 +129,8 @@
       </v-card-text>
 
       <v-card-actions class="justify-center py-4 flex-shrink-0" style="border-top: 1px solid #eee;">
-        <v-btn 
-          color="#0d47a1" 
-          dark 
-          depressed 
-          width="140" 
-          height="44" 
-          class="rounded-lg text-subtitle-1 font-weight-medium"
-          @click="close"
-        >
+        <v-btn color="#0d47a1" dark depressed width="140" height="44"
+          class="rounded-lg text-subtitle-1 font-weight-medium" @click="close">
           ปิด
         </v-btn>
       </v-card-actions>
@@ -181,7 +170,8 @@ export default {
 
 <style scoped>
 .info-label {
-  min-width: 110px; /* จัด Label ให้ตรงกันใน PC */
+  min-width: 110px;
+  /* จัด Label ให้ตรงกันใน PC */
 }
 
 .border-light {
@@ -206,6 +196,7 @@ export default {
 .overflow-y-auto::-webkit-scrollbar {
   width: 6px;
 }
+
 .overflow-y-auto::-webkit-scrollbar-thumb {
   background-color: #ccc;
   border-radius: 4px;
@@ -213,7 +204,8 @@ export default {
 
 @media (max-width: 600px) {
   .info-label {
-    min-width: 90px; /* ลดความกว้าง Label บนมือถือ */
+    min-width: 90px;
+    /* ลดความกว้าง Label บนมือถือ */
     font-size: 0.9rem;
   }
 }
