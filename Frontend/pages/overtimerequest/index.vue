@@ -3,9 +3,7 @@
     <v-main class="pa-6">
       <v-breadcrumbs class="px-0 mb-4" :items="breadcrumbs" />
 
-      <v-row class="mb-6">
-        <StatsGrid :stats="stats" :current-filter="filterStatus" @update:filter="onStatClick" />
-      </v-row>
+      <StatsGrid :stats="stats" :current-filter="filterStatus" @update:filter="onStatClick" />
 
       <FilterToolbar v-model="q" placeholder="ค้นหารายการ, เลขเอกสาร, รายละเอียด...">
         <template #filters>
@@ -21,102 +19,8 @@
         @bulk-cancel="onBulkCancel" />
 
       <DialogCancelRequest v-model="cancelDialog" :items="itemsToCancel" @confirm="confirmCancelRequest" />
-
-      <v-dialog v-model="viewDialog" max-width="900px">
-        <v-card v-if="selectedItem" class="rounded-lg">
-          <v-card-title class="blue lighten-5 d-flex justify-center py-4 relative" style="position: relative;">
-            <span class="headline font-weight-bold blue--text text--darken-3">รายละเอียดเบิกค่าล่วงเวลา</span>
-            <v-btn icon absolute right top @click="viewDialog = false" class="mt-3 mr-3">
-              <v-icon color="grey darken-2">mdi-close</v-icon>
-            </v-btn>
-          </v-card-title>
-
-          <v-card-text class="pa-6">
-            <div class="subtitle-1 font-weight-bold mb-6 black--text">รายละเอียดเอกสาร</div>
-
-            <v-row class="mb-2">
-              <v-col cols="12" md="6" class="py-1">
-                <v-row no-gutters>
-                  <v-col cols="4" class="black--text text--darken-1">หมายเลขเอกสาร</v-col>
-                  <v-col cols="1" class="text-center">:</v-col>
-                  <v-col cols="7" class="font-weight-medium black--text">{{ selectedItem.docs_no }}</v-col>
-                </v-row>
-              </v-col>
-              <v-col cols="12" md="6" class="py-1">
-                <v-row no-gutters>
-                  <v-col cols="5" class="black--text text--darken-1 text-right pr-4">จำนวนชั่วโมงทั้งหมด</v-col>
-                  <v-col cols="1" class="text-center">:</v-col>
-                  <v-col cols="6" class="font-weight-medium black--text">{{ selectedItem.hours }}</v-col>
-                </v-row>
-              </v-col>
-              <v-col cols="12" class="py-1">
-                <v-row no-gutters>
-                  <v-col cols="2" class="black--text text--darken-1" style="max-width: 140px;">
-                    {{ [4, 5, 6].includes(selectedItem.status) ? 'เหตุผล' : 'รายละเอียด' }}
-                  </v-col>
-
-                  <v-col cols="1" class="text-center" style="max-width: 40px;">:</v-col>
-
-                  <v-col class="black--text">
-                    <span v-if="[4, 5, 6].includes(selectedItem.status)" class="red--text">
-                      {{ selectedItem.cancellation_reason }}
-                    </span>
-
-                    <span v-else>
-                      -
-                    </span>
-                  </v-col>
-                </v-row>
-              </v-col>
-            </v-row>
-
-            <v-card outlined elevation="0" class="mt-4 rounded-lg overflow-hidden">
-              <v-simple-table>
-                <template v-slot:default>
-                  <thead class="grey lighten-5">
-                    <tr>
-                      <th class="text-center font-weight-bold black--text subtitle-2 py-3">ลำดับ</th>
-                      <th class="text-left font-weight-bold black--text subtitle-2">วันที่</th>
-                      <th class="text-left font-weight-bold black--text subtitle-2">เวลาที่เริ่ม</th>
-                      <th class="text-left font-weight-bold black--text subtitle-2">เวลาที่สิ้นสุด</th>
-                      <th class="text-center font-weight-bold black--text subtitle-2">อัตราค่าล่วงเวลา</th>
-                      <th class="text-left font-weight-bold black--text subtitle-2">จำนวนชั่วโมง</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(detail, i) in relatedItems" :key="i">
-                      <td class="text-center grey--text">{{ i + 1 }}</td>
-                      <td class="grey--text text--darken-2">{{ detail.date }}</td>
-                      <td class="grey--text text--darken-2">{{ detail.startTime }}</td>
-                      <td class="grey--text text--darken-2">{{ detail.endTime }}</td>
-                      <td class="text-center grey--text text--darken-2">
-                        <v-chip small :color="getRateColor(detail.rate)" dark class="font-weight-bold">
-                          {{ detail.rate }} เท่า
-                        </v-chip>
-                      </td>
-                      <td class="text-center grey--text text--darken-2">{{ detail.hours }}</td>
-                    </tr>
-                    <tr v-if="loadingDetails">
-                      <td colspan="6" class="text-center pa-4">กำลังโหลดข้อมูล...</td>
-                    </tr>
-                    <tr v-if="!loadingDetails && relatedItems.length === 0">
-                      <td colspan="6" class="text-center pa-4 grey--text">ไม่พบข้อมูลรายละเอียด</td>
-                    </tr>
-                  </tbody>
-                </template>
-              </v-simple-table>
-            </v-card>
-
-            <div class="d-flex justify-center mt-8">
-              <v-btn color="#0d47a1" dark depressed width="140" height="44" class="rounded-lg title font-weight-regular"
-                style="font-size: 1rem !important;" @click="viewDialog = false">
-                ปิด
-              </v-btn>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-dialog>
-
+      <DialogRequestDetail v-model="viewDialog" :item="selectedItem" :details="relatedItems"
+        :loading="loadingDetails" />
       <v-dialog v-model="successDialog" max-width="500px">
         <v-card class="rounded-lg text-center pb-6">
           <v-card-title class="blue lighten-5 py-3 relative justify-center mb-6">
@@ -140,12 +44,12 @@
           </v-card-text>
         </v-card>
       </v-dialog>
-
     </v-main>
   </v-app>
 </template>
 
 <script>
+import DialogRequestDetail from "@/components/overtimerequest/DialogRequestDetail.vue";
 import api from "@/service/api";
 import Status from "@/components/global/Status.vue";
 import StatsGrid from "@/components/global/StatsGrid.vue";
@@ -162,7 +66,8 @@ export default {
     StatsGrid,
     FilterToolbar,
     RequestTable,
-    DialogCancelRequest
+    DialogCancelRequest,
+    DialogRequestDetail,
   },
 
   data() {

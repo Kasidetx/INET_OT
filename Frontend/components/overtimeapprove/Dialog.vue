@@ -1,9 +1,9 @@
 <template>
   <v-dialog v-model="visible" :max-width="step === 'success' ? 520 : (type === 'approve' ? 520 : 820)"
-    :scrollable="step !== 'success' && type !== 'approve'" persistent>
-    <v-card class="rounded-xl" style="overflow:hidden; max-height:90vh;">
+    :scrollable="step !== 'success' && type !== 'approve'" persistent :fullscreen="$vuetify.breakpoint.xsOnly"
+    :transition="$vuetify.breakpoint.xsOnly ? 'dialog-bottom-transition' : 'dialog-transition'">
+    <v-card class="rounded-xl" style="overflow:hidden; display: flex; flex-direction: column; max-height: 100vh;">
 
-      <!-- ===================== SUCCESS ===================== -->
       <template v-if="step === 'success'">
         <v-card-title class="d-flex align-center justify-center px-4 py-3" style="position: relative;">
           <span class="font-weight-bold text-h6" style="color:#1565C0;">
@@ -31,9 +31,7 @@
         </v-card-text>
       </template>
 
-      <!-- ===================== CONFIRM ===================== -->
       <template v-else>
-        <!-- APPROVE (แบบง่าย) -->
         <template v-if="type === 'approve'">
           <v-card-title class="d-flex align-center justify-center px-4 py-3" style="position: relative;">
             <span class="font-weight-bold text-h6" style="color:#1565C0;">
@@ -76,9 +74,8 @@
           </v-card-actions>
         </template>
 
-        <!-- REJECT (แบบละเอียด) -->
         <template v-else>
-          <v-card-title class="d-flex justify-center align-center px-4 py-3"
+          <v-card-title class="d-flex justify-center align-center px-4 py-3 flex-shrink-0"
             style="background-color:#E3F2FD; position:relative;">
             <span class="font-weight-bold text-h6" style="color:#1565C0;">
               ไม่อนุมัติคำร้องเบิกค่าล่วงเวลา
@@ -89,7 +86,7 @@
             </v-btn>
           </v-card-title>
 
-          <v-card-text class="px-6 pt-6">
+          <v-card-text class="px-6 pt-6 flex-grow-1 overflow-y-auto">
             <div class="text-center mb-6">
               <div class="text-h6 font-weight-bold primary--text mb-2">
                 ต้องการไม่อนุมัติคำร้องขอใช่หรือไม่
@@ -102,7 +99,9 @@
               </div>
             </div>
 
-            <div class="pa-4 grey lighten-4 rounded-lg mb-4 custom-scroll" style="height:320px; overflow-y:auto;">
+            <div class="pa-4 grey lighten-4 rounded-lg mb-4 custom-scroll"
+              :style="$vuetify.breakpoint.xsOnly ? '' : 'height:320px; overflow-y:auto;'">
+
               <v-card v-for="(it, i) in safeItems" :key="(it.otId || it.docNo) || i"
                 class="mb-4 rounded-lg elevation-0 white pa-5">
                 <div class="font-weight-bold mb-4 text-h6 text--primary">รายการที่ {{ i + 1 }}</div>
@@ -157,7 +156,7 @@
             </div>
           </v-card-text>
 
-          <v-card-actions class="justify-center pb-8 pt-4 px-6">
+          <v-card-actions class="justify-center pb-8 pt-4 px-6 flex-shrink-0">
             <v-btn outlined color="primary" class="px-12 rounded-lg font-weight-bold" height="44" @click="close">
               ยกเลิก
             </v-btn>
@@ -181,8 +180,6 @@ export default {
     value: { type: Boolean, default: false },
     items: { type: Array, default: () => [] },
     type: { type: String, default: "approve" },
-
-    // ✅ parent จะส่ง true มาตอน update สำเร็จ
     success: { type: Boolean, default: false }
   },
   data() {
@@ -216,7 +213,7 @@ export default {
       this.$emit("input", false);
     },
     closeSuccess() {
-      this.$emit("done"); // ให้ parent reset success + เคลียร์ selection
+      this.$emit("done");
       this.$emit("input", false);
     },
     confirm() {
@@ -231,6 +228,7 @@ export default {
 </script>
 
 <style scoped>
+/* สไตล์เดิมจากต้นฉบับเป๊ะๆ */
 .info-row {
   display: flex;
   align-items: baseline;
