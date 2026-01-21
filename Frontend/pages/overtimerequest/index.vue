@@ -1,7 +1,6 @@
 <template>
-  <v-app style="background-color: white; font-family: 'Sarabun', sans-serif;">
+  <v-app style="background-color: #F8F9FA; font-family: 'Sarabun', sans-serif;">
     <v-main class="pa-6">
-      <v-breadcrumbs class="px-0 mb-4" :items="breadcrumbs" />
 
       <StatsGrid :stats="stats" :current-filter="filterStatus" @update:filter="onStatClick" />
 
@@ -14,7 +13,7 @@
         </template>
       </FilterToolbar>
 
-      <RequestTable :items="filteredItems" :loading="loading" :selected.sync="selectedItems"
+      <RequestTable class="mt-4" :items="filteredItems" :loading="loading" :selected.sync="selectedItems"
         :show-select="filterStatus === 'pending_head' || filterStatus === 'pending_hr'" @view="onView"
         @bulk-cancel="onBulkCancel" />
 
