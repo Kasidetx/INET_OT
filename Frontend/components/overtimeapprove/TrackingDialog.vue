@@ -171,7 +171,7 @@ export default {
             return 1;
         },
         step2Id() {
-            if (this.docStatus === 4) return 0;
+            if (this.docStatus === 4) return 6;
             const s = this.hrApprover.status;
             if (s === 3) return 3;
             if (s === 5) return 5;
