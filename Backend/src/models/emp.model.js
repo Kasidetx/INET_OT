@@ -12,7 +12,8 @@ const employee = {
 
   async findByEmpId(empId) {
     const sql = `
-      SELECT id, emp_id, employee_type_id, name, position, created_at
+      SELECT id, emp_id, employee_type_id, name, position, 
+             leader_emp_id, hr_emp_id, created_at
       FROM employee
       WHERE emp_id = ?
     `;

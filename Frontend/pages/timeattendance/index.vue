@@ -173,7 +173,7 @@ export default {
       selectedEntry: null,
       overtimeMode: "",
       dialogConfirm: false,
-      mockEmpId: '61306',
+      mockEmpId: process.env.EMP_ID,
     };
   },
   created() {
@@ -280,8 +280,6 @@ export default {
       try {
         const res = await api.post("/api/ot/submit", {
           items: selectedItems.map(item => ({ id: item.id })),
-          leader_emp_id: "head001",
-          hr_emp_id: "hr001"
         });
         if (res.data && res.data.status === 'success') {
           this.dialogConfirm = false;

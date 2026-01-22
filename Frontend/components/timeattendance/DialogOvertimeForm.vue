@@ -351,9 +351,6 @@ export default {
         created_by: this.emp_id,
         type: this.selectedType,
 
-        // ✅ 1. เพิ่ม leader_emp_id (Mock ไว้ก่อน เพราะระบบจริงต้องดึงจาก Profile พนักงาน)
-        leader_emp_id: "head001",
-
         sts: 1,
       };
 

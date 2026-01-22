@@ -8,9 +8,7 @@ import HolidayModel from "../models/holiday.model.js";
 import WorkdayModel from "../models/workday.model.js";
 import EmpModel from "../models/emp.model.js";
 import dayjs from "dayjs";
-import {
-  calculateOtDetails,
-} from "../utils/otCalculation.js";
+import { calculateOtDetails } from "../utils/otCalculation.js";
 
 // --- Service Logic ---
 const OtService = {
@@ -27,10 +25,23 @@ const OtService = {
   },
 
   async createApprovalFlow(requestId, data, conn) {
+    const ownerId = data.emp_id || data.created_by;
+    const empProfile = await EmpModel.findByEmpId(ownerId);
+
+    if (!empProfile) {
+      throw new Error("ไม่พบข้อมูลพนักงานเจ้าของคำขอ");
+    }
+
+    const approverLevel1 = empProfile.leader_emp_id;
+
+    const approverLevel2 = empProfile.hr_emp_id;
+
     const approvers = [
-      { level: 1, approve_emp: data.leader_emp_id },
-      { level: 2, approve_emp: "hr001" },
+      { level: 1, approve_emp: approverLevel1 }, // หัวหน้า
+      { level: 2, approve_emp: approverLevel2 }, // HR
     ];
+
+    // สร้าง Flow ในฐานข้อมูล
     await ApprovalModel.createFlow(requestId, approvers, conn);
   },
 
@@ -50,13 +61,11 @@ const OtService = {
           await this._getSystemConfigs();
 
         const targetEmpId = data.emp_id || data.created_by;
-        const empProfile = await EmpModel.findByEmpId(targetEmpId);
-        const realEmpTypeId = empProfile ? empProfile.employee_type_id : 1;
 
         const calcResult = calculateOtDetails(
           data.start_time,
           data.end_time,
-          realEmpTypeId,
+          targetEmpId,
           allConfigs,
           holidayList,
           workdayConfigs,
@@ -96,7 +105,6 @@ const OtService = {
       }
 
       if (data.sts !== 0) {
-        if (!data.leader_emp_id) throw new Error("ต้องระบุรหัสหัวหน้างาน");
         await this.createApprovalFlow(requestId, { ...data }, conn);
       }
 
@@ -226,7 +234,7 @@ const OtService = {
     }
   },
 
-  async submitOtRequest(items, leader_emp_id) {
+  async submitOtRequest(items) {
     const conn = await db.getConnection();
 
     // เตรียมข้อมูล Config ครั้งเดียวเพื่อลดการ Query ซ้ำๆ ใน Loop
@@ -237,7 +245,7 @@ const OtService = {
     try {
       await conn.beginTransaction();
 
-      const processedRequestIds = new Set();
+      const requestOwnerMap = new Map();
 
       // 1. วนลูปคำนวณและอัปเดตรายละเอียด OT แต่ละรายการ
       for (const item of items) {
@@ -275,17 +283,24 @@ const OtService = {
 
         // เก็บ Request ID ไว้ (เพื่อไปเปลี่ยนสถานะและสร้าง Flow)
         if (otData.request_id) {
-          processedRequestIds.add(otData.request_id);
+          requestOwnerMap.set(otData.request_id, targetEmpId);
         }
       }
 
       // 2. วนลูป Request ID ที่ไม่ซ้ำ เพื่อเปลี่ยนสถานะและสร้าง Flow
-      for (const reqId of processedRequestIds) {
-        // เปลี่ยนสถานะเป็น 1 (Submit/รออนุมัติ)
+      for (const [reqId, empId] of requestOwnerMap) {
+        // เปลี่ยนสถานะเป็น 1 (Submit)
         await OtModel.updateRequestStatus(reqId, 1, conn);
 
-        // สร้าง Approval Flow ทันที โดยใช้ leader_emp_id ที่ส่งมา
-        await this.createApprovalFlow(reqId, { leader_emp_id }, conn);
+        // สร้าง Approval Flow
+        // 🔥 จุดสำคัญ: ส่ง emp_id เข้าไปให้ createApprovalFlow ด้วย
+        await this.createApprovalFlow(
+          reqId,
+          {
+            emp_id: empId, // <--- เพิ่มบรรทัดนี้ครับ
+          },
+          conn,
+        );
       }
 
       await conn.commit();

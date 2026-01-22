@@ -13,10 +13,10 @@ export const getAllEmployee = catchAsync(async (req, res) => {
 
 export const getRequest = catchAsync(async (req, res) => {
   const { emp_id } = req.query;
-  
+
   // ✅ เปลี่ยนมาใช้ฟังก์ชันที่ดึงจาก View
   const data = await OtModel.requestOt(emp_id);
-  
+
   sendResponse(res, 200, data, "ดึงรายการคำขอ OT พร้อมรายละเอียดสำเร็จ");
 });
 
@@ -56,7 +56,7 @@ export const updateOt = catchAsync(async (req, res) => {
 });
 
 export const submitOtRequest = catchAsync(async (req, res) => {
-  const { items, leader_emp_id } = req.body;
+  const { items } = req.body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     throw {
@@ -64,14 +64,8 @@ export const submitOtRequest = catchAsync(async (req, res) => {
       message: "กรุณาเลือกรายการ OT อย่างน้อย 1 รายการ",
     };
   }
-  if (!leader_emp_id) {
-    throw {
-      statusCode: 400,
-      message: "กรุณาระบุรหัสหัวหน้างาน (leader_emp_id)",
-    };
-  }
 
-  const result = await OtService.submitOtRequest(items, leader_emp_id);
+  const result = await OtService.submitOtRequest(items);
   sendResponse(res, 200, result, "ส่งคำขออนุมัติสำเร็จ");
 });
 

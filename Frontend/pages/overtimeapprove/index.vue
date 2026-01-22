@@ -66,6 +66,7 @@ export default {
 
   data() {
     return {
+      mockEmpId: process.env.HR_ID,
       loading: false,
       searchQuery: '',
       statusFilter: 'all',
@@ -180,6 +181,7 @@ export default {
   },
 
   methods: {
+
     formatDateTime(isoString, type = 'date') {
       if (!isoString) return '-'
       const date = new Date(isoString)
@@ -205,8 +207,6 @@ export default {
 
       // 1. ตรวจสอบข้อมูลที่ถูกเลือก
       const selected = Array.isArray(items) ? items : (this.selectedRequests || [])
-
-      // ✅ กรองเอาเฉพาะรายการที่มี requestId
       const validItems = selected.filter(it => it.requestId)
 
       if (validItems.length === 0) {
@@ -215,29 +215,18 @@ export default {
         return
       }
 
-      // ✅ กำหนดคนอนุมัติ (Mock ตาม Tab ที่เลือกอยู่)
-      // ถ้าอยู่ Tab รอหัวหน้า -> ให้ action_by เป็น head001
-      // ถ้าอยู่ Tab รอ HR -> ให้ action_by เป็น hr001
-      let actionBy = 'unknown'
-      if (this.statusFilter === 'pending_head') actionBy = 'head001'
-      else if (this.statusFilter === 'pending_hr') actionBy = 'hr001'
-      else {
-        // กรณีอยู่หน้า All ให้เดาจากสถานะของ Item แรก
-        const firstStatus = Number(validItems[0].status)
-        actionBy = firstStatus === 1 ? 'head001' : 'hr001'
-      }
+      const actionBy = this.mockEmpId;
 
       try {
         // 2. วนลูปยิง API Approval
         await Promise.all(
           validItems.map(item => {
-            console.log(`➡️ ${type.toUpperCase()} Request ID: ${item.requestId} by ${actionBy}`)
+            // console.log(`➡️ ${type.toUpperCase()} Request ID: ${item.requestId} by ${actionBy}`)
 
-            // ✅ ยิงเข้า Route Approval ที่เราเตรียมไว้ใน Backend
             return api.post(`/api/approval/${item.requestId}`, {
-              status: type, // ส่ง 'approve' หรือ 'reject'
+              status: type,
               reason: reason,
-              action_by: actionBy
+              action_by: actionBy // ส่งค่า head001 หรือ hr001 ไปให้ Backend บันทึก
             })
           })
         )

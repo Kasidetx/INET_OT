@@ -86,7 +86,7 @@ export default {
       years: [],
       selectedItems: [], // ID ที่ถูกเลือกจาก Table
 
-      mockEmpId: '61306',
+      mockEmpId: process.env.EMP_ID,
 
       // Stats Config
       stats: [
