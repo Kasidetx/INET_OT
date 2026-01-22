@@ -20,6 +20,12 @@ export default {
     ],
   },
 
+  env: {
+    EMP_ID: process.env.EMP_ID,
+    HEAD_ID: process.env.HEAD_ID,
+    HR_ID: process.env.HR_ID
+  },
+
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [
   ],
